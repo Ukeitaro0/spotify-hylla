@@ -103,6 +103,34 @@
   .hero .g { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 10px 0 14px; }
   .hero .g span { font-size: 12px; padding: 4px 10px; border-radius: var(--r-pill); background: rgba(255,255,255,.08); color: var(--muted); }
 
+
+  /* Spelare */
+  .player { position: fixed; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 12;
+    background: rgba(38,40,50,.82); backdrop-filter: blur(22px) saturate(1.5); -webkit-backdrop-filter: blur(22px) saturate(1.5);
+    border: 1px solid var(--line); border-radius: 22px; box-shadow: 0 12px 34px rgba(0,0,0,.45); overflow: hidden;
+    transform: translateY(140%); transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+  .player.on { transform: none; }
+  @media (min-width: 800px) { .player { left: 50%; right: auto; width: 640px; margin-left: -320px; } }
+  .player .in { display: flex; align-items: center; gap: 12px; padding: 10px 10px 8px; }
+  .player img { width: 48px; height: 48px; border-radius: 12px; object-fit: cover; flex: none; background: var(--panel2); }
+  .player .meta { flex: 1; min-width: 0; cursor: pointer; }
+  .player .t { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .player .s { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .player .ctl { display: flex; gap: 2px; flex: none; }
+  .player .ctl button { background: transparent; border: none; width: 40px; height: 40px; padding: 0; display: grid; place-items: center; border-radius: 50%; }
+  .player .ctl button svg { width: 22px; height: 22px; fill: var(--text); }
+  .player .ctl .pp { background: var(--text); width: 44px; height: 44px; }
+  .player .ctl .pp svg { fill: #111; }
+  .player .bar { position: relative; height: 18px; margin: 0 14px 6px; cursor: pointer; }
+  .player .bar::before, .player .bar .fill { content: ""; position: absolute; left: 0; top: 7px; height: 4px; border-radius: 2px; }
+  .player .bar::before { right: 0; background: rgba(255,255,255,.14); }
+  .player .bar .fill { background: var(--accent); width: 0; }
+  .player .times { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin: -6px 14px 6px; font-variant-numeric: tabular-nums; }
+  body.has-player main { padding-bottom: 130px; }
+  body.has-player .toast { bottom: calc(126px + env(safe-area-inset-bottom)); }
+  body.has-player .panel .scroll { padding-bottom: calc(130px + env(safe-area-inset-bottom)); }
+  .trk.playing .t { color: var(--accent); font-weight: 600; }
+
   .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 10px);
     background: rgba(50,52,62,.95); padding: 11px 18px; border-radius: var(--r-pill); font-size: 14px; z-index: 20;
     opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; max-width: 90vw; text-align: center; box-shadow: var(--shadow); }
@@ -142,6 +170,19 @@
     <div class="scroll" id="sheetInner"></div>
   </div>
 </div>
+<div class="player" id="player">
+  <div class="in">
+    <img id="pImg" alt="">
+    <div class="meta" id="pMeta"><div class="t" id="pTitle"></div><div class="s" id="pSub"></div></div>
+    <div class="ctl">
+      <button id="pPrev" title="Föregående"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+      <button id="pPlay" class="pp" title="Spela/Pausa"><svg viewBox="0 0 24 24" id="pIcon"></svg></button>
+      <button id="pNext" title="Nästa"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+    </div>
+  </div>
+  <div class="bar" id="pBar"><div class="fill" id="pFill"></div></div>
+  <div class="times"><span id="pPos">0:00</span><span id="pDur">0:00</span></div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -155,6 +196,9 @@ const DEFAULT_PLAYLIST_NAME = '2026';
 const ALBUM_TYPES = ['album', 'compilation'];   // singlar och EP:er räknas som "övriga"
 const GENRE_CACHE_DAYS = 30;
 const GENRE_CHIPS_SHOWN = 14;
+// Genrer hämtas från Last.fm (Spotify har i praktiken slutat leverera dem). Klistra in din API-nyckel här:
+const LASTFM_KEY = '46555c45952c57f37bb685bf4404a447';
+const TAG_BLOCK = /^(seen live|favou?rites?|favou?rite albums?|albums i own|my albums|female vocalists?|male vocalists?|female vocalist|singer-songwriter vocals|love|awesome|beautiful|spotify|all|best of \d{4}|aoty|\d{4}s?|\d{4} albums?|under \d+ listeners)$/i;
 
 // ===== Lagring =====
 const store = {
@@ -236,7 +280,8 @@ async function getAll(path) {
 let tracks = [], albums = [], loose = [];
 let tab = 'albums', genreFilter = null, showAllGenres = false;
 let genreCache = {};
-try { genreCache = JSON.parse(store.get('genres_v1') || '{}'); } catch {}
+try { genreCache = JSON.parse(store.get('genres_v2') || '{}'); } catch {}
+store.del('genres_v1');
 
 function bestImage(imgs, min = 300) {
   if (!imgs || !imgs.length) return '';
@@ -249,11 +294,7 @@ const fmtDur = ms => { const s = Math.round(ms / 1000); return Math.floor(s / 60
 const sortKey = s => (s || '').toLocaleLowerCase('sv').replace(/^the /, '');
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
-function genresOf(artists) {
-  const set = new Set();
-  (artists || []).forEach(a => (genreCache[a.id]?.g || []).forEach(g => set.add(g)));
-  return [...set];
-}
+const genresFor = albumId => genreCache[albumId]?.g || [];
 
 async function loadPlaylists() {
   const playlists = await getAll('/me/playlists?limit=50');
@@ -299,24 +340,59 @@ async function loadPlaylist(id) {
   loadGenres();
 }
 
-// Genre finns bara på artistnivå hos Spotify. Hämtas en artist i taget och sparas lokalt i 30 dagar.
+// Genrer från Last.fm: först albumets taggar, annars artistens. Sparas lokalt i 30 dagar.
+async function lastfm(params) {
+  const p = new URLSearchParams({ ...params, api_key: LASTFM_KEY, format: 'json', autocorrect: '1' });
+  const r = await fetch('https://ws.audioscrobbler.com/2.0/?' + p);
+  const j = await r.json();
+  if (j.error) { const e = new Error(j.message || 'Last.fm-fel'); e.code = j.error; throw e; }
+  return j;
+}
+function cleanTags(j, artistName) {
+  const tags = j?.toptags?.tag || [];
+  const a = (artistName || '').toLowerCase();
+  return tags.filter(t => Number(t.count) >= 10)
+    .map(t => t.name.trim().toLowerCase())
+    .filter(n => n && n !== a && !TAG_BLOCK.test(n))
+    .filter((n, i, arr) => arr.indexOf(n) === i)
+    .slice(0, 3);
+}
+const cleanAlbumName = s => s.replace(/\s*[\(\[][^\)\]]*(deluxe|edition|remaster|version|expanded|anniversary|bonus)[^\)\]]*[\)\]]/ig, '')
+  .replace(/\s+-\s+.*(remaster|edition|version|deluxe).*$/i, '').trim();
+
 async function loadGenres() {
-  const ids = new Set();
-  tracks.forEach(({ t }) => t.artists.forEach(a => a.id && ids.add(a.id)));
+  if (!LASTFM_KEY) return;
+  const albumsSeen = new Map();
+  tracks.forEach(({ t }) => { if (!albumsSeen.has(t.album.id)) albumsSeen.set(t.album.id, t.album); });
   const fresh = Date.now() - GENRE_CACHE_DAYS * 864e5;
-  const todo = [...ids].filter(id => !(genreCache[id] && genreCache[id].ts > fresh));
+  const todo = [...albumsSeen.values()].filter(a => !(genreCache[a.id] && genreCache[a.id].ts > fresh));
   if (!todo.length) return;
-  let done = 0;
+  let done = 0, failed = 0;
+  const artistTags = async name => {
+    const key = 'artist:' + name.toLowerCase();
+    if (genreCache[key] && genreCache[key].ts > fresh) return genreCache[key].g;
+    const g = cleanTags(await lastfm({ method: 'artist.gettoptags', artist: name }), name);
+    genreCache[key] = { g, ts: Date.now() };
+    return g;
+  };
   const worker = async () => {
     while (todo.length) {
-      const id = todo.shift();
-      try { const a = await api('/artists/' + id); genreCache[id] = { g: a.genres || [], ts: Date.now() }; }
-      catch (e) { if (e.status === 403 || e.status === 404) genreCache[id] = { g: [], ts: Date.now() }; }
-      if (++done % 10 === 0) { store.set('genres_v1', JSON.stringify(genreCache)); renderChips(); }
+      const a = todo.shift();
+      const artist = a.artists?.[0]?.name || '';
+      try {
+        let g = [];
+        try { g = cleanTags(await lastfm({ method: 'album.gettoptags', artist, album: cleanAlbumName(a.name) }), artist); } catch (e) { if (e.code === 10 || e.code === 26) throw e; }
+        if (!g.length) g = await artistTags(artist);
+        genreCache[a.id] = { g, ts: Date.now() };
+      } catch (e) {
+        failed++;
+        if (e.code === 10 || e.code === 26) { toast('Last.fm-nyckeln fungerar inte', 4000); todo.length = 0; }
+      }
+      if (++done % 15 === 0) { store.set('genres_v2', JSON.stringify(genreCache)); renderChips(); }
     }
   };
   await Promise.all([worker(), worker(), worker()]);
-  store.set('genres_v1', JSON.stringify(genreCache));
+  store.set('genres_v2', JSON.stringify(genreCache));
   render();
 }
 
@@ -325,16 +401,16 @@ function matchesSearch(...fields) {
   const q = sortKey($('q').value.trim());
   return !q || fields.some(f => sortKey(f).includes(q));
 }
-const matchesGenre = artists => !genreFilter || genresOf(artists).includes(genreFilter);
+const matchesGenre = albumId => !genreFilter || genresFor(albumId).includes(genreFilter);
 
 function currentPool() {
-  return tab === 'loose' ? loose.map(x => x.t.artists) : albums.map(a => a.artists);
+  return tab === 'loose' ? loose.map(x => x.t.album.id) : albums.map(a => a.id);
 }
 
 function renderChips() {
   const box = $('chips'); box.innerHTML = '';
   const count = new Map();
-  currentPool().forEach(artists => genresOf(artists).forEach(g => count.set(g, (count.get(g) || 0) + 1)));
+  currentPool().forEach(id => genresFor(id).forEach(g => count.set(g, (count.get(g) || 0) + 1)));
   if (!count.size) { box.hidden = true; return; }
   box.hidden = false;
   let list = [...count.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
@@ -353,7 +429,7 @@ function renderChips() {
 
 function sortAlbums(list) {
   const s = $('sort').value, c = (a, b) => a.localeCompare(b, 'sv');
-  const firstGenre = a => genresOf(a.artists).sort()[0] || '~';
+  const firstGenre = a => genresFor(a.id)[0] || '~';
   return [...list].sort((a, b) =>
     s === 'date' ? (b.date || '').localeCompare(a.date || '') :
     s === 'added' ? (b.added || '').localeCompare(a.added || '') :
@@ -372,7 +448,8 @@ function albumCard(a) {
 }
 
 function trackRow(t, { num, onPlay, showCover = true }) {
-  const r = el('div', 'trk');
+  const r = el('div', 'trk'); r.dataset.uri = t.uri;
+  if (ps && ps.item && ps.item.uri === t.uri) r.classList.add('playing');
   if (showCover) { const img = el('img'); img.loading = 'lazy'; img.alt = ''; img.src = bestImage(t.album.images, 64); r.appendChild(img); }
   else r.appendChild(el('div', 'n', String(num)));
   const m = el('div', 'meta');
@@ -392,18 +469,18 @@ function render() {
   if (!tracks.length) { main.innerHTML = '<div class="center">Spellistan är tom, eller går inte att läsa (Spotify lämnar bara ut innehåll i listor du äger eller samarbetar på).</div>'; return; }
 
   if (tab === 'albums') {
-    const list = sortAlbums(albums.filter(a => matchesSearch(a.name, a.artist) && matchesGenre(a.artists)));
+    const list = sortAlbums(albums.filter(a => matchesSearch(a.name, a.artist) && matchesGenre(a.id)));
     if (!list.length) return main.appendChild(el('div', 'center', 'Inga album matchar.'));
     if ($('sort').value === 'genre') {
       const groups = new Map();
-      list.forEach(a => { const g = genresOf(a.artists).sort()[0] || 'Ingen genre angiven'; (groups.get(g) || groups.set(g, []).get(g)).push(a); });
+      list.forEach(a => { const g = genresFor(a.id)[0] || 'ingen genre angiven'; (groups.get(g) || groups.set(g, []).get(g)).push(a); });
       groups.forEach((l, g) => { const h = el('div', 'artist-h'); h.appendChild(el('div', 'n', cap(g))); main.appendChild(h); main.appendChild(grid(l)); });
     } else main.appendChild(grid(list));
   }
 
   if (tab === 'artists') {
     const byArtist = new Map();
-    albums.filter(a => matchesSearch(a.name, a.artist) && matchesGenre(a.artists))
+    albums.filter(a => matchesSearch(a.name, a.artist) && matchesGenre(a.id))
       .forEach(a => { (byArtist.get(a.artist) || byArtist.set(a.artist, []).get(a.artist)).push(a); });
     const names = [...byArtist.keys()].sort((a, b) => sortKey(a).localeCompare(sortKey(b), 'sv'));
     if (!names.length) return main.appendChild(el('div', 'center', 'Inga träffar.'));
@@ -411,7 +488,7 @@ function render() {
       const list = byArtist.get(n).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
       const h = el('div', 'artist-h');
       h.appendChild(el('div', 'n', n));
-      const gs = genresOf(list[0].artists).slice(0, 3);
+      const gs = [...new Set(list.flatMap(a => genresFor(a.id)))].slice(0, 3);
       if (gs.length) h.appendChild(el('div', 'g', gs.map(cap).join(' · ')));
       main.appendChild(h); main.appendChild(grid(list));
     });
@@ -419,7 +496,7 @@ function render() {
 
   if (tab === 'loose') {
     const s = $('sort').value;
-    const list = loose.filter(x => matchesSearch(x.t.name, artistNames(x.t.artists), x.t.album.name) && matchesGenre(x.t.artists)).sort((a, b) =>
+    const list = loose.filter(x => matchesSearch(x.t.name, artistNames(x.t.artists), x.t.album.name) && matchesGenre(x.t.album.id)).sort((a, b) =>
       s === 'added' ? (b.added || '').localeCompare(a.added || '') :
       s === 'date' ? (b.t.album.release_date || '').localeCompare(a.t.album.release_date || '') :
       s === 'name' ? sortKey(a.t.name).localeCompare(sortKey(b.t.name), 'sv') :
@@ -445,7 +522,7 @@ function openAlbum(a) {
   const img = el('img'); img.src = a.imgBig; img.alt = ''; hero.appendChild(img);
   hero.appendChild(el('div', 't', a.name));
   hero.appendChild(el('div', 's', a.artist + (a.date ? ' · ' + year(a.date) : '') + ' · ' + a.items.length + ' låtar'));
-  const gs = genresOf(a.artists).slice(0, 4);
+  const gs = genresFor(a.id);
   if (gs.length) { const g = el('div', 'g'); gs.forEach(x => g.appendChild(el('span', null, cap(x)))); hero.appendChild(g); }
   const pb = el('button', 'primary', '▶  Spela'); pb.onclick = () => play({ context_uri: a.uri }, a.uri);
   hero.appendChild(pb);
@@ -488,11 +565,65 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && sheetOpen)
   });
 })();
 
+// ===== Spelare: visar vad Spotify spelar just nu och styr den =====
+const ICON_PLAY = '<path d="M7 4.5v15l13-7.5z"/>', ICON_PAUSE = '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>';
+let ps = null, psAt = 0, pollTimer = null;
+function curPos() { if (!ps) return 0; return Math.min(ps.progress_ms + (ps.is_playing ? Date.now() - psAt : 0), ps.item.duration_ms); }
+function paintProgress() {
+  if (!ps) return;
+  const pos = curPos(), dur = ps.item.duration_ms;
+  $('pFill').style.width = (pos / dur * 100) + '%';
+  $('pPos').textContent = fmtDur(pos); $('pDur').textContent = fmtDur(dur);
+}
+function updatePlayer(s) {
+  if (!s || !s.item || s.item.type !== 'track') { ps = null; $('player').classList.remove('on'); document.body.classList.remove('has-player'); markPlaying(null); return; }
+  ps = s; psAt = Date.now();
+  const t = s.item;
+  const src = bestImage(t.album.images, 64); if ($('pImg').src !== src) $('pImg').src = src;
+  $('pTitle').textContent = t.name;
+  $('pSub').textContent = artistNames(t.artists) + (s.device?.name ? ' · ' + s.device.name : '');
+  $('pIcon').innerHTML = s.is_playing ? ICON_PAUSE : ICON_PLAY;
+  $('player').classList.add('on'); document.body.classList.add('has-player');
+  paintProgress(); markPlaying(t.uri);
+}
+function markPlaying(uri) {
+  document.querySelectorAll('.trk.playing').forEach(e => e.classList.remove('playing'));
+  if (uri) document.querySelectorAll(`.trk[data-uri="${CSS.escape(uri)}"]`).forEach(e => e.classList.add('playing'));
+}
+async function pollPlayer() {
+  if (document.hidden || !(store.get('access_token') || store.get('refresh_token'))) return;
+  try { updatePlayer(await api('/me/player')); } catch {}
+}
+function pollSoon(ms = 700) { setTimeout(pollPlayer, ms); }
+function startPolling() { clearInterval(pollTimer); pollTimer = setInterval(pollPlayer, 4000); pollPlayer(); }
+setInterval(paintProgress, 500);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) pollPlayer(); });
+
+$('pPlay').onclick = async () => {
+  if (!ps) return;
+  const wasPlaying = ps.is_playing;
+  ps.progress_ms = curPos(); psAt = Date.now(); ps.is_playing = !wasPlaying;
+  $('pIcon').innerHTML = ps.is_playing ? ICON_PAUSE : ICON_PLAY;
+  try { await api('/me/player/' + (wasPlaying ? 'pause' : 'play'), { method: 'PUT' }); } catch (e) { toast('Fel: ' + e.message, 3000); }
+  pollSoon();
+};
+$('pNext').onclick = async () => { try { await api('/me/player/next', { method: 'POST' }); } catch (e) { toast('Fel: ' + e.message, 3000); } pollSoon(); };
+$('pPrev').onclick = async () => { try { await api('/me/player/previous', { method: 'POST' }); } catch (e) { toast('Fel: ' + e.message, 3000); } pollSoon(); };
+$('pBar').onclick = async e => {
+  if (!ps) return;
+  const r = $('pBar').getBoundingClientRect();
+  const pos = Math.round(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * ps.item.duration_ms);
+  ps.progress_ms = pos; psAt = Date.now(); paintProgress();
+  try { await api('/me/player/seek?position_ms=' + pos, { method: 'PUT' }); } catch (e2) { toast('Fel: ' + e2.message, 3000); }
+  pollSoon();
+};
+$('pMeta').onclick = () => { if (!ps) return; const a = albums.find(x => x.id === ps.item.album.id); if (a) openAlbum(a); };
+
 // ===== Uppspelning (styr Spotify-appen) =====
 async function play(body, fallbackUri) {
   try {
     await api('/me/player/play', { method: 'PUT', body: JSON.stringify(body) });
-    toast('Spelar ▶'); return;
+    toast('Spelar ▶'); pollSoon(); return;
   } catch (e) {
     if (e.status !== 404) { toast((e.status === 403 ? 'Spotify nekade: ' : 'Fel: ') + e.message, 4000); return; }
   }
@@ -501,7 +632,7 @@ async function play(body, fallbackUri) {
     const d = (devices || []).find(x => !x.is_restricted);
     if (d) {
       await api('/me/player/play?device_id=' + encodeURIComponent(d.id), { method: 'PUT', body: JSON.stringify(body) });
-      toast('Spelar på ' + d.name + ' ▶'); return;
+      toast('Spelar på ' + d.name + ' ▶'); pollSoon(); return;
     }
   } catch {}
   toast('Ingen aktiv Spotify-enhet, öppnar appen…', 3000);
@@ -537,6 +668,7 @@ if (store.get('sort')) $('sort').value = store.get('sort');
     const pick = await loadPlaylists();
     if (!pick) { $('main').innerHTML = '<div class="center">Hittade inga spellistor.</div>'; return; }
     await loadPlaylist(pick.id);
+    startPolling();
   } catch (e) {
     if (e.message !== 'Inte inloggad') showLogin(e.message);
   }
