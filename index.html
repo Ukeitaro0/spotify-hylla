@@ -49,6 +49,9 @@
   .chip { flex: none; padding: 6px 13px; font-size: 13px; background: var(--panel); color: var(--muted); white-space: nowrap; }
   .chip.on { background: var(--accent-soft); color: var(--accent); border-color: rgba(30,215,96,.35); }
   .chip .c { opacity: .6; margin-left: 4px; }
+  .chips.sub { margin-top: 8px; }
+  .chips.sub .chip { font-size: 12px; padding: 5px 11px; }
+  .chips[hidden] { display: none; }
 
   main { padding: 16px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px 16px; }
@@ -116,6 +119,8 @@
   .settings label { display: flex; gap: 10px; align-items: center; font-size: 15px; margin-bottom: 18px; cursor: pointer; }
   .settings input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
   .settings textarea { width: 100%; height: 120px; font: 12px ui-monospace, monospace; color: var(--text); background: var(--panel2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px; }
+  .hero .g span.main { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .hero .g span.src { background: transparent; font-style: italic; }
   .hero .g span { font-size: 12px; padding: 4px 10px; border-radius: var(--r-pill); background: rgba(255,255,255,.08); color: var(--muted); }
 
 
@@ -176,6 +181,7 @@
     <button data-tab="loose">Övriga låtar</button>
   </div>
   <div class="chips" id="chips"></div>
+  <div class="chips sub" id="chips2" hidden></div>
 </header>
 <main id="main"><div class="center">Laddar…</div></main>
 <div class="sheet" id="sheet">
@@ -201,6 +207,7 @@
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="config.js"></script>
 <script>
 // ===== Inställningar =====
 const CLIENT_ID = '60281313632147df82bb02cdd1691929';
@@ -212,8 +219,8 @@ const DEFAULT_PLAYLIST_NAME = '2026';
 const ALBUM_TYPES = ['album', 'compilation'];   // singlar och EP:er räknas som "övriga"
 const GENRE_CACHE_DAYS = 30;
 const GENRE_CHIPS_SHOWN = 14;
-// Genrer hämtas från Last.fm (Spotify har i praktiken slutat leverera dem). Klistra in din API-nyckel här:
-const LASTFM_KEY = '46555c45952c57f37bb685bf4404a447';
+// Genreförslag hämtas från Last.fm. Nyckeln ligger i config.js.
+const LASTFM_KEY = (window.HYLLAN_CONFIG && window.HYLLAN_CONFIG.lastfmKey) || '';
 const TAG_BLOCK = /^(seen live|favou?rites?|favou?rite albums?|albums i own|my albums|female vocalists?|male vocalists?|female vocalist|singer-songwriter vocals|love|awesome|beautiful|spotify|all|best of \d{4}|aoty|\d{4}s?|\d{4} albums?|under \d+ listeners)$/i;
 
 // ===== Lagring =====
@@ -294,7 +301,7 @@ async function getAll(path) {
 
 // ===== Data =====
 let tracks = [], albums = [], loose = [];
-let tab = 'albums', genreFilter = null, showAllGenres = false;
+let tab = 'albums', mainFilter = null, subFilter = null, showAllGenres = false;
 let genreCache = {};
 try { genreCache = JSON.parse(store.get('genres_v2') || '{}'); } catch {}
 store.del('genres_v1');
@@ -310,21 +317,44 @@ const fmtDur = ms => { const s = Math.round(ms / 1000); return Math.floor(s / 60
 const sortKey = s => (s || '').toLocaleLowerCase('sv').replace(/^the /, '');
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
-// Egna genrer: sparas i webbläsaren och kan exporteras till genres.json i repot (läses då av alla enheter).
+// Egna genrer: { main: 'Country', subs: ['Americana'] } per album-id.
+// Sparas i webbläsaren och kan exporteras till genres.json i repot (läses då av alla enheter).
 let repoGenres = {}, localGenres = {};
 try { localGenres = JSON.parse(store.get('own_genres_v1') || '{}'); } catch {}
 let useLastfm = store.get('use_lastfm') !== '0';
-const ownGenres = () => ({ ...repoGenres, ...localGenres });
-const ownFor = albumId => (localGenres[albumId] ?? repoGenres[albumId]) || [];
-const genresFor = albumId => { const o = ownFor(albumId); return o.length ? o : (useLastfm ? (genreCache[albumId]?.g || []).map(cap) : []); };
-function allOwnGenreNames() {
+function norm(v) {                      // tål det gamla formatet (en lista) från version 4
+  if (!v) return null;
+  if (Array.isArray(v)) return v.length ? { main: v[0], subs: v.slice(1) } : { main: '', subs: [] };
+  return { main: v.main || '', subs: v.subs || [] };
+}
+const ownFor = albumId => norm(localGenres[albumId] ?? repoGenres[albumId]) || { main: '', subs: [] };
+const hasOwn = albumId => { const o = ownFor(albumId); return !!(o.main || o.subs.length); };
+function infoFor(albumId) {
+  const o = ownFor(albumId);
+  if (o.main || o.subs.length) return { ...o, own: true };
+  if (!useLastfm) return { main: '', subs: [], own: false };
+  const lf = (genreCache[albumId]?.g || []).map(cap);
+  return { main: lf[0] || '', subs: lf.slice(1), own: false };
+}
+const genresFor = albumId => { const i = infoFor(albumId); return [i.main, ...i.subs].filter(Boolean); };
+function allOwnIds() { return [...new Set([...Object.keys(repoGenres), ...Object.keys(localGenres)])]; }
+function ownNames(kind, withinMain) {     // kind: 'main' | 'subs'; sorterat på hur ofta de används
   const count = new Map();
-  Object.values(ownGenres()).forEach(l => (l || []).forEach(g => count.set(g, (count.get(g) || 0) + 1)));
+  allOwnIds().forEach(id => {
+    const o = ownFor(id);
+    if (withinMain && o.main !== withinMain) return;
+    (kind === 'main' ? [o.main] : o.subs).filter(Boolean).forEach(g => count.set(g, (count.get(g) || 0) + 1));
+  });
   return [...count.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'sv')).map(x => x[0]);
 }
-function setOwn(albumId, list) {
-  localGenres[albumId] = list;
+function setOwn(albumId, v) {
+  localGenres[albumId] = { main: v.main || '', subs: v.subs || [] };
   store.set('own_genres_v1', JSON.stringify(localGenres));
+}
+function exportGenres() {
+  const out = {};
+  allOwnIds().forEach(id => { const o = ownFor(id); if (o.main || o.subs.length) out[id] = o; });
+  return out;
 }
 async function loadRepoGenres() {
   try { const r = await fetch('genres.json', { cache: 'no-store' }); if (r.ok) repoGenres = await r.json() || {}; } catch {}
@@ -343,7 +373,7 @@ async function loadPlaylists() {
 async function loadPlaylist(id) {
   $('main').innerHTML = '<div class="center">Hämtar låtar…</div>';
   store.set('playlist_id', id);
-  genreFilter = null;
+  mainFilter = null; subFilter = null;
   const items = await getAll(`/playlists/${id}/items?limit=50`);
   tracks = items.map(it => ({ t: it.item || it.track, added: it.added_at }))
     .filter(x => x.t && x.t.type !== 'episode' && x.t.album && !x.t.is_local);
@@ -435,35 +465,50 @@ function matchesSearch(...fields) {
   const q = sortKey($('q').value.trim());
   return !q || fields.some(f => sortKey(f).includes(q));
 }
-const matchesGenre = albumId => !genreFilter || genresFor(albumId).includes(genreFilter);
+function matchesGenre(albumId) {
+  if (!mainFilter) return true;
+  const i = infoFor(albumId);
+  return i.main === mainFilter && (!subFilter || i.subs.includes(subFilter));
+}
 
 function currentPool() {
   return tab === 'loose' ? loose.map(x => x.t.album.id) : albums.map(a => a.id);
 }
 
 function renderChips() {
-  const box = $('chips'); box.innerHTML = '';
+  const box = $('chips'), box2 = $('chips2'); box.innerHTML = ''; box2.innerHTML = '';
+  const pool = currentPool().map(infoFor);
   const count = new Map();
-  currentPool().forEach(id => genresFor(id).forEach(g => count.set(g, (count.get(g) || 0) + 1)));
-  if (!count.size) { box.hidden = true; return; }
+  pool.forEach(i => i.main && count.set(i.main, (count.get(i.main) || 0) + 1));
+  if (!count.size) { box.hidden = box2.hidden = true; return; }
   box.hidden = false;
-  let list = [...count.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  let list = [...count.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'sv'));
   const more = list.length > GENRE_CHIPS_SHOWN && !showAllGenres;
   if (more) list = list.slice(0, GENRE_CHIPS_SHOWN);
-  if (genreFilter && !list.some(([g]) => g === genreFilter)) list.unshift([genreFilter, count.get(genreFilter) || 0]);
-  const add = (label, on, fn, c) => {
+  if (mainFilter && !list.some(([g]) => g === mainFilter)) list.unshift([mainFilter, count.get(mainFilter) || 0]);
+  const add = (target, label, on, fn, c) => {
     const b = el('button', 'chip' + (on ? ' on' : ''), label);
     if (c != null) b.appendChild(el('span', 'c', String(c)));
-    b.onclick = fn; box.appendChild(b);
+    b.onclick = fn; target.appendChild(b);
   };
-  add('Alla genrer', !genreFilter, () => { genreFilter = null; render(); });
-  list.forEach(([g, c]) => add(cap(g), genreFilter === g, () => { genreFilter = genreFilter === g ? null : g; render(); }, c));
-  if (more) add('Fler…', false, () => { showAllGenres = true; renderChips(); });
+  add(box, 'Alla genrer', !mainFilter, () => { mainFilter = subFilter = null; render(); });
+  list.forEach(([g, c]) => add(box, g, mainFilter === g, () => { mainFilter = mainFilter === g ? null : g; subFilter = null; render(); }, c));
+  if (more) add(box, 'Fler…', false, () => { showAllGenres = true; renderChips(); });
+
+  // Rad 2: subgenrer inom vald huvudgenre
+  const subs = new Map();
+  if (mainFilter) pool.filter(i => i.main === mainFilter).forEach(i => i.subs.forEach(g => subs.set(g, (subs.get(g) || 0) + 1)));
+  box2.hidden = !subs.size;
+  if (subs.size) {
+    add(box2, 'Alla ' + mainFilter.toLowerCase(), !subFilter, () => { subFilter = null; render(); });
+    [...subs.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'sv'))
+      .forEach(([g, c]) => add(box2, g, subFilter === g, () => { subFilter = subFilter === g ? null : g; render(); }, c));
+  }
 }
 
 function sortAlbums(list) {
   const s = $('sort').value, c = (a, b) => a.localeCompare(b, 'sv');
-  const firstGenre = a => genresFor(a.id)[0] || '~';
+  const firstGenre = a => infoFor(a.id).main || '~';
   return [...list].sort((a, b) =>
     s === 'date' ? (b.date || '').localeCompare(a.date || '') :
     s === 'added' ? (b.added || '').localeCompare(a.added || '') :
@@ -507,8 +552,9 @@ function render() {
     if (!list.length) return main.appendChild(el('div', 'center', 'Inga album matchar.'));
     if ($('sort').value === 'genre') {
       const groups = new Map();
-      list.forEach(a => { const g = genresFor(a.id)[0] || 'ingen genre angiven'; (groups.get(g) || groups.set(g, []).get(g)).push(a); });
-      groups.forEach((l, g) => { const h = el('div', 'artist-h'); h.appendChild(el('div', 'n', cap(g))); main.appendChild(h); main.appendChild(grid(l)); });
+      list.forEach(a => { const g = infoFor(a.id).main || 'Ingen genre angiven'; (groups.get(g) || groups.set(g, []).get(g)).push(a); });
+      groups.forEach((l, g) => { const h = el('div', 'artist-h'); h.appendChild(el('div', 'n', g));
+        const subs = [...new Set(l.flatMap(a => infoFor(a.id).subs))]; if (subs.length) h.appendChild(el('div', 'g', subs.join(' · '))); main.appendChild(h); main.appendChild(grid(l)); });
     } else main.appendChild(grid(list));
   }
 
@@ -522,8 +568,8 @@ function render() {
       const list = byArtist.get(n).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
       const h = el('div', 'artist-h');
       h.appendChild(el('div', 'n', n));
-      const gs = [...new Set(list.flatMap(a => genresFor(a.id)))].slice(0, 3);
-      if (gs.length) h.appendChild(el('div', 'g', gs.map(cap).join(' · ')));
+      const gs = [...new Set(list.flatMap(a => genresFor(a.id)))].slice(0, 4);
+      if (gs.length) h.appendChild(el('div', 'g', gs.join(' · ')));
       main.appendChild(h); main.appendChild(grid(list));
     });
   }
@@ -564,36 +610,46 @@ function openAlbum(a) {
   const editor = el('div', 'gedit'); editor.hidden = true; inner.appendChild(editor);
   const paintGenres = () => {
     gBox.innerHTML = '';
-    genresFor(a.id).forEach(x => gBox.appendChild(el('span', null, cap(x))));
-    if (!ownFor(a.id).length && genresFor(a.id).length) gBox.appendChild(el('span', null, 'från Last.fm'));
+    const i = infoFor(a.id);
+    if (i.main) gBox.appendChild(el('span', 'main', i.main));
+    i.subs.forEach(x => gBox.appendChild(el('span', null, x)));
+    if (!i.own && (i.main || i.subs.length)) gBox.appendChild(el('span', 'src', 'från Last.fm'));
   };
+  const canon = (v, pool) => { v = v.trim(); if (!v) return ''; return pool.find(n => n.toLowerCase() === v.toLowerCase()) || cap(v); };
   const paintEditor = () => {
     editor.innerHTML = '';
     const mine = ownFor(a.id);
-    const toggle = g => { const cur = ownFor(a.id); setOwn(a.id, cur.includes(g) ? cur.filter(x => x !== g) : [...cur, g]); paintGenres(); paintEditor(); };
-    editor.appendChild(el('div', 'lbl', 'Tryck för att välja eller ta bort'));
-    const w1 = el('div', 'wrap');
-    const names = [...new Set([...mine, ...allOwnGenreNames()])];
-    if (!names.length) w1.appendChild(el('span', 'lbl', 'Inga egna genrer än. Skriv en nedan.'));
-    names.forEach(g => { const c = el('button', 'chip' + (mine.includes(g) ? ' on' : ''), g); c.onclick = () => toggle(g); w1.appendChild(c); });
-    editor.appendChild(w1);
-    const sugg = (genreCache[a.id]?.g || []).map(cap).filter(g => !names.some(n => n.toLowerCase() === g.toLowerCase()));
-    if (sugg.length) {
-      editor.appendChild(el('div', 'lbl', 'Förslag från Last.fm'));
-      const w2 = el('div', 'wrap');
-      sugg.forEach(g => { const c = el('button', 'chip sug', '+ ' + g); c.onclick = () => toggle(g); w2.appendChild(c); });
-      editor.appendChild(w2);
-    }
-    const add = el('div', 'add'); const inp = el('input'); inp.placeholder = 'Ny genre…'; inp.enterKeyHint = 'done';
-    const ab = el('button', null, 'Lägg till');
-    const doAdd = () => {
-      const v = inp.value.trim(); if (!v) return;
-      const existing = allOwnGenreNames().find(n => n.toLowerCase() === v.toLowerCase());
-      const g = existing || cap(v);
-      if (!ownFor(a.id).includes(g)) toggle(g); else inp.value = '';
+    const save = v => { setOwn(a.id, v); paintGenres(); paintEditor(); };
+    const setMain = g => save({ main: mine.main === g ? '' : g, subs: mine.subs.filter(x => x !== g) });
+    const toggleSub = g => save({ main: mine.main, subs: mine.subs.includes(g) ? mine.subs.filter(x => x !== g) : [...mine.subs, g].filter(x => x !== mine.main) });
+    const chip = (wrap, label, on, fn, cls = '') => { const c = el('button', 'chip ' + cls + (on ? ' on' : ''), label); c.onclick = fn; wrap.appendChild(c); };
+    const inputRow = (ph, onAdd) => {
+      const row = el('div', 'add'); const inp = el('input'); inp.placeholder = ph; inp.enterKeyHint = 'done';
+      const b = el('button', null, 'Lägg till'); const go = () => { if (inp.value.trim()) onAdd(inp.value); };
+      b.onclick = go; inp.onkeydown = e => { if (e.key === 'Enter') go(); };
+      row.appendChild(inp); row.appendChild(b); return row;
     };
-    ab.onclick = doAdd; inp.onkeydown = e => { if (e.key === 'Enter') doAdd(); };
-    add.appendChild(inp); add.appendChild(ab); editor.appendChild(add);
+    const lf = (genreCache[a.id]?.g || []).map(cap);
+
+    // Huvudgenre (en)
+    editor.appendChild(el('div', 'lbl', 'Huvudgenre (en)'));
+    const w1 = el('div', 'wrap');
+    const mains = [...new Set([mine.main, ...ownNames('main')].filter(Boolean))];
+    mains.forEach(g => chip(w1, g, mine.main === g, () => setMain(g)));
+    lf.filter(g => !mains.some(m => m.toLowerCase() === g.toLowerCase())).slice(0, 2).forEach(g => chip(w1, '+ ' + g, false, () => setMain(g), 'sug'));
+    editor.appendChild(w1);
+    editor.appendChild(inputRow('Ny huvudgenre…', v => setMain(canon(v, ownNames('main')))));
+
+    // Subgenrer (flera)
+    editor.appendChild(el('div', 'lbl', 'Subgenrer (flera)'));
+    const w2 = el('div', 'wrap');
+    const near = mine.main ? ownNames('subs', mine.main) : [];
+    const subs = [...new Set([...mine.subs, ...near, ...ownNames('subs')])].filter(g => g !== mine.main);
+    subs.forEach(g => chip(w2, g, mine.subs.includes(g), () => toggleSub(g)));
+    lf.filter(g => g.toLowerCase() !== (mine.main || '').toLowerCase() && !subs.some(m => m.toLowerCase() === g.toLowerCase()))
+      .forEach(g => chip(w2, '+ ' + g, false, () => toggleSub(g), 'sug'));
+    editor.appendChild(w2);
+    editor.appendChild(inputRow('Ny subgenre…', v => toggleSub(canon(v, ownNames('subs')))));
   };
   eb.onclick = () => { editor.hidden = !editor.hidden; eb.textContent = editor.hidden ? '✎ Ändra genrer' : '✓ Klar'; if (!editor.hidden) paintEditor(); else render(); };
   paintGenres();
@@ -613,13 +669,13 @@ function openSettings() {
   $('bgart').style.backgroundImage = 'none';
   const box = el('div', 'settings');
   box.appendChild(el('h3', null, 'Genrer'));
-  const n = Object.values(ownGenres()).filter(l => l && l.length).length;
+  const n = Object.keys(exportGenres()).length;
   box.appendChild(el('p', null, `Du har satt egna genrer på ${n} album. De sparas i den här webbläsaren. För att de ska finnas på alla enheter (och inte försvinna), exportera och lägg filen som genres.json i repot.`));
   const lab = el('label'); const cb = el('input'); cb.type = 'checkbox'; cb.checked = useLastfm;
   cb.onchange = () => { useLastfm = cb.checked; store.set('use_lastfm', useLastfm ? '1' : '0'); render(); };
   lab.appendChild(cb); lab.appendChild(el('span', null, 'Visa Last.fm-genrer på album utan egna'));
   box.appendChild(lab);
-  const json = JSON.stringify(Object.fromEntries(Object.entries(ownGenres()).filter(([, l]) => l && l.length)), null, 1);
+  const json = JSON.stringify(exportGenres(), null, 1);
   const row = el('div', 'row');
   const dl = el('button', 'primary', 'Ladda ner genres.json');
   dl.onclick = () => { const u = URL.createObjectURL(new Blob([json], { type: 'application/json' })); const x = el('a'); x.href = u; x.download = 'genres.json'; document.body.appendChild(x); x.click(); x.remove(); setTimeout(() => URL.revokeObjectURL(u), 2000); };
