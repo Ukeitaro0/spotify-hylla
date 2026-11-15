@@ -101,6 +101,21 @@
   .hero .t { font-size: 22px; font-weight: 700; margin-top: 16px; letter-spacing: -.2px; }
   .hero .s { color: var(--muted); font-size: 14px; margin: 4px 0 6px; }
   .hero .g { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 10px 0 14px; }
+  .gedit { margin: 4px 0 18px; padding: 14px; border-radius: var(--r-lg); background: rgba(255,255,255,.04); border: 1px solid var(--line); text-align: left; }
+  .gedit .lbl { font-size: 12px; color: var(--muted); margin: 10px 0 6px; }
+  .gedit .lbl:first-child { margin-top: 0; }
+  .gedit .wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+  .gedit .chip { font-size: 13px; }
+  .gedit .chip.sug { border-style: dashed; }
+  .gedit .add { display: flex; gap: 6px; margin-top: 12px; }
+  .gedit .add input { flex: 1; min-width: 0; }
+  .linkbtn { background: transparent; border: none; color: var(--muted); font-size: 13px; padding: 6px 10px; text-decoration: underline; text-underline-offset: 3px; }
+  .settings h3 { margin: 6px 0 4px; font-size: 20px; }
+  .settings p { color: var(--muted); font-size: 14px; line-height: 1.45; margin: 6px 0 14px; }
+  .settings .row { flex-wrap: wrap; margin-bottom: 18px; }
+  .settings label { display: flex; gap: 10px; align-items: center; font-size: 15px; margin-bottom: 18px; cursor: pointer; }
+  .settings input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
+  .settings textarea { width: 100%; height: 120px; font: 12px ui-monospace, monospace; color: var(--text); background: var(--panel2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px; }
   .hero .g span { font-size: 12px; padding: 4px 10px; border-radius: var(--r-pill); background: rgba(255,255,255,.08); color: var(--muted); }
 
 
@@ -143,6 +158,7 @@
     <h1>Hyllan</h1>
     <select id="plSel" title="Spellista"></select>
     <button id="reload" class="icon" title="Ladda om">⟳</button>
+    <button id="settingsBtn" class="icon" title="Inställningar">⚙︎</button>
   </div>
   <div class="row" style="margin-top:12px">
     <input type="search" id="q" placeholder="Sök artist, album, låt…">
@@ -294,7 +310,25 @@ const fmtDur = ms => { const s = Math.round(ms / 1000); return Math.floor(s / 60
 const sortKey = s => (s || '').toLocaleLowerCase('sv').replace(/^the /, '');
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
-const genresFor = albumId => genreCache[albumId]?.g || [];
+// Egna genrer: sparas i webbläsaren och kan exporteras till genres.json i repot (läses då av alla enheter).
+let repoGenres = {}, localGenres = {};
+try { localGenres = JSON.parse(store.get('own_genres_v1') || '{}'); } catch {}
+let useLastfm = store.get('use_lastfm') !== '0';
+const ownGenres = () => ({ ...repoGenres, ...localGenres });
+const ownFor = albumId => (localGenres[albumId] ?? repoGenres[albumId]) || [];
+const genresFor = albumId => { const o = ownFor(albumId); return o.length ? o : (useLastfm ? (genreCache[albumId]?.g || []).map(cap) : []); };
+function allOwnGenreNames() {
+  const count = new Map();
+  Object.values(ownGenres()).forEach(l => (l || []).forEach(g => count.set(g, (count.get(g) || 0) + 1)));
+  return [...count.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'sv')).map(x => x[0]);
+}
+function setOwn(albumId, list) {
+  localGenres[albumId] = list;
+  store.set('own_genres_v1', JSON.stringify(localGenres));
+}
+async function loadRepoGenres() {
+  try { const r = await fetch('genres.json', { cache: 'no-store' }); if (r.ok) repoGenres = await r.json() || {}; } catch {}
+}
 
 async function loadPlaylists() {
   const playlists = await getAll('/me/playlists?limit=50');
@@ -522,21 +556,84 @@ function openAlbum(a) {
   const img = el('img'); img.src = a.imgBig; img.alt = ''; hero.appendChild(img);
   hero.appendChild(el('div', 't', a.name));
   hero.appendChild(el('div', 's', a.artist + (a.date ? ' · ' + year(a.date) : '') + ' · ' + a.items.length + ' låtar'));
-  const gs = genresFor(a.id);
-  if (gs.length) { const g = el('div', 'g'); gs.forEach(x => g.appendChild(el('span', null, cap(x)))); hero.appendChild(g); }
+  const gBox = el('div', 'g'); hero.appendChild(gBox);
   const pb = el('button', 'primary', '▶  Spela'); pb.onclick = () => play({ context_uri: a.uri }, a.uri);
   hero.appendChild(pb);
+  const eb = el('button', 'linkbtn', '✎ Ändra genrer'); hero.appendChild(el('br')); hero.appendChild(eb);
   inner.appendChild(hero);
+  const editor = el('div', 'gedit'); editor.hidden = true; inner.appendChild(editor);
+  const paintGenres = () => {
+    gBox.innerHTML = '';
+    genresFor(a.id).forEach(x => gBox.appendChild(el('span', null, cap(x))));
+    if (!ownFor(a.id).length && genresFor(a.id).length) gBox.appendChild(el('span', null, 'från Last.fm'));
+  };
+  const paintEditor = () => {
+    editor.innerHTML = '';
+    const mine = ownFor(a.id);
+    const toggle = g => { const cur = ownFor(a.id); setOwn(a.id, cur.includes(g) ? cur.filter(x => x !== g) : [...cur, g]); paintGenres(); paintEditor(); };
+    editor.appendChild(el('div', 'lbl', 'Tryck för att välja eller ta bort'));
+    const w1 = el('div', 'wrap');
+    const names = [...new Set([...mine, ...allOwnGenreNames()])];
+    if (!names.length) w1.appendChild(el('span', 'lbl', 'Inga egna genrer än. Skriv en nedan.'));
+    names.forEach(g => { const c = el('button', 'chip' + (mine.includes(g) ? ' on' : ''), g); c.onclick = () => toggle(g); w1.appendChild(c); });
+    editor.appendChild(w1);
+    const sugg = (genreCache[a.id]?.g || []).map(cap).filter(g => !names.some(n => n.toLowerCase() === g.toLowerCase()));
+    if (sugg.length) {
+      editor.appendChild(el('div', 'lbl', 'Förslag från Last.fm'));
+      const w2 = el('div', 'wrap');
+      sugg.forEach(g => { const c = el('button', 'chip sug', '+ ' + g); c.onclick = () => toggle(g); w2.appendChild(c); });
+      editor.appendChild(w2);
+    }
+    const add = el('div', 'add'); const inp = el('input'); inp.placeholder = 'Ny genre…'; inp.enterKeyHint = 'done';
+    const ab = el('button', null, 'Lägg till');
+    const doAdd = () => {
+      const v = inp.value.trim(); if (!v) return;
+      const existing = allOwnGenreNames().find(n => n.toLowerCase() === v.toLowerCase());
+      const g = existing || cap(v);
+      if (!ownFor(a.id).includes(g)) toggle(g); else inp.value = '';
+    };
+    ab.onclick = doAdd; inp.onkeydown = e => { if (e.key === 'Enter') doAdd(); };
+    add.appendChild(inp); add.appendChild(ab); editor.appendChild(add);
+  };
+  eb.onclick = () => { editor.hidden = !editor.hidden; eb.textContent = editor.hidden ? '✎ Ändra genrer' : '✓ Klar'; if (!editor.hidden) paintEditor(); else render(); };
+  paintGenres();
   const l = el('div', 'list');
   a.items.forEach(x => l.appendChild(trackRow(x.t, { num: x.t.track_number, showCover: false,
     onPlay: () => play({ context_uri: a.uri, offset: { uri: x.t.uri } }, x.t.uri) })));
   inner.appendChild(l);
+  showSheet();
+}
+function showSheet() {
   $('sheet').classList.add('on'); document.body.classList.add('locked');
   if (!sheetOpen) { history.pushState({ sheet: 1 }, ''); sheetOpen = true; }
+}
+
+function openSettings() {
+  const inner = $('sheetInner'); inner.innerHTML = ''; inner.scrollTop = 0;
+  $('bgart').style.backgroundImage = 'none';
+  const box = el('div', 'settings');
+  box.appendChild(el('h3', null, 'Genrer'));
+  const n = Object.values(ownGenres()).filter(l => l && l.length).length;
+  box.appendChild(el('p', null, `Du har satt egna genrer på ${n} album. De sparas i den här webbläsaren. För att de ska finnas på alla enheter (och inte försvinna), exportera och lägg filen som genres.json i repot.`));
+  const lab = el('label'); const cb = el('input'); cb.type = 'checkbox'; cb.checked = useLastfm;
+  cb.onchange = () => { useLastfm = cb.checked; store.set('use_lastfm', useLastfm ? '1' : '0'); render(); };
+  lab.appendChild(cb); lab.appendChild(el('span', null, 'Visa Last.fm-genrer på album utan egna'));
+  box.appendChild(lab);
+  const json = JSON.stringify(Object.fromEntries(Object.entries(ownGenres()).filter(([, l]) => l && l.length)), null, 1);
+  const row = el('div', 'row');
+  const dl = el('button', 'primary', 'Ladda ner genres.json');
+  dl.onclick = () => { const u = URL.createObjectURL(new Blob([json], { type: 'application/json' })); const x = el('a'); x.href = u; x.download = 'genres.json'; document.body.appendChild(x); x.click(); x.remove(); setTimeout(() => URL.revokeObjectURL(u), 2000); };
+  const cp = el('button', null, 'Kopiera');
+  cp.onclick = async () => { try { await navigator.clipboard.writeText(json); toast('Kopierat'); } catch { ta.select(); toast('Markera och kopiera texten nedan'); } };
+  row.appendChild(dl); row.appendChild(cp); box.appendChild(row);
+  const ta = el('textarea'); ta.readOnly = true; ta.value = json; box.appendChild(ta);
+  inner.appendChild(box);
+  showSheet();
 }
 function hideSheet() {
   $('sheet').classList.remove('on'); document.body.classList.remove('locked');
   $('panel').style.transform = ''; sheetOpen = false;
+  render();
 }
 function closeSheet() { if (sheetOpen) history.back(); else hideSheet(); }
 window.addEventListener('popstate', () => { if (sheetOpen) hideSheet(); });
@@ -657,6 +754,7 @@ document.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
 $('q').oninput = render;
 $('sort').onchange = () => { store.set('sort', $('sort').value); render(); };
 $('plSel').onchange = () => loadPlaylist($('plSel').value).catch(err => toast(err.message, 4000));
+$('settingsBtn').onclick = openSettings;
 $('reload').onclick = () => loadPlaylist($('plSel').value).catch(err => toast(err.message, 4000));
 if (store.get('sort')) $('sort').value = store.get('sort');
 
@@ -665,7 +763,7 @@ if (store.get('sort')) $('sort').value = store.get('sort');
     await handleRedirect();
     if (!(await getToken())) return showLogin();
     $('hdr').hidden = false;
-    const pick = await loadPlaylists();
+    const [pick] = await Promise.all([loadPlaylists(), loadRepoGenres()]);
     if (!pick) { $('main').innerHTML = '<div class="center">Hittade inga spellistor.</div>'; return; }
     await loadPlaylist(pick.id);
     startPolling();
