@@ -6,65 +6,107 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#111214">
+<meta name="theme-color" content="#16171c">
 <title>Hyllan</title>
 <style>
   :root {
-    --bg: #111214; --panel: #1b1c20; --panel2: #24262b; --text: #f2f2f4;
-    --muted: #9a9ca5; --accent: #1ed760; --radius: 10px;
+    --bg: #16171c; --panel: #1f2027; --panel2: #2a2c35; --line: rgba(255,255,255,.07);
+    --text: #f3f3f6; --muted: #9c9eab; --accent: #1ed760; --accent-soft: rgba(30,215,96,.16);
+    --r-lg: 20px; --r-md: 14px; --r-pill: 999px;
+    --shadow: 0 10px 30px rgba(0,0,0,.35);
+    --font: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; background: var(--bg); color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  body { padding-bottom: env(safe-area-inset-bottom); }
-  header { position: sticky; top: 0; z-index: 5; background: rgba(17,18,20,.92);
-    backdrop-filter: blur(12px); padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
-    border-bottom: 1px solid #222; }
-  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  h1 { font-size: 20px; margin: 0; flex: 1; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); }
+  body { padding-bottom: env(safe-area-inset-bottom);
+    background: radial-gradient(1200px 600px at 10% -10%, #23263a 0%, transparent 60%), var(--bg); background-attachment: fixed; }
+  body.locked { overflow: hidden; }
+
+  header { position: sticky; top: 0; z-index: 5; padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+    background: rgba(22,23,28,.78); backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4); }
+  .row { display: flex; gap: 8px; align-items: center; }
+  h1 { font-size: 24px; margin: 0; flex: 1; font-weight: 700; letter-spacing: -.3px; }
+
   select, input, button { font: inherit; color: var(--text); background: var(--panel2);
-    border: 1px solid #333; border-radius: 8px; padding: 7px 10px; }
+    border: 1px solid var(--line); border-radius: var(--r-pill); padding: 9px 14px; outline: none;
+    transition: background .15s, transform .1s; }
+  select { appearance: none; -webkit-appearance: none; padding-right: 30px;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 17px) 55%, calc(100% - 12px) 55%; background-size: 5px 5px; background-repeat: no-repeat; }
   button { cursor: pointer; }
-  button.primary { background: var(--accent); color: #000; border: none; font-weight: 600; }
-  input[type=search] { flex: 1; min-width: 140px; }
-  .tabs { display: flex; gap: 6px; margin-top: 10px; }
-  .tabs button { flex: 1; background: transparent; }
-  .tabs button.on { background: var(--panel2); border-color: #555; }
-  main { padding: 14px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
-  .card { cursor: pointer; }
-  .card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius);
-    background: var(--panel); display: block; box-shadow: 0 4px 14px rgba(0,0,0,.4); }
-  .card .t { font-size: 14px; font-weight: 600; margin-top: 6px; white-space: nowrap;
-    overflow: hidden; text-overflow: ellipsis; }
-  .card .s { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  h2 { font-size: 16px; margin: 22px 0 10px; color: var(--muted); font-weight: 600; }
-  h2:first-child { margin-top: 0; }
+  button:active { transform: scale(.96); }
+  button.primary { background: var(--accent); color: #062b14; border: none; font-weight: 700; padding: 11px 22px; }
+  button.icon { width: 40px; height: 40px; padding: 0; display: grid; place-items: center; font-size: 17px; }
+  input[type=search] { flex: 1; min-width: 0; padding-left: 38px;
+    background: var(--panel2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%239c9eab' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='M11 11l3.5 3.5'/%3E%3C/svg%3E") 14px 50% no-repeat; }
+
+  .seg { display: flex; margin-top: 12px; background: var(--panel); border-radius: var(--r-pill); padding: 4px; }
+  .seg button { flex: 1; background: transparent; border: none; padding: 8px 6px; color: var(--muted); font-weight: 600; font-size: 14px; }
+  .seg button.on { background: var(--panel2); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+
+  .chips { display: flex; gap: 6px; overflow-x: auto; margin: 12px -16px 0; padding: 0 16px 2px; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { flex: none; padding: 6px 13px; font-size: 13px; background: var(--panel); color: var(--muted); white-space: nowrap; }
+  .chip.on { background: var(--accent-soft); color: var(--accent); border-color: rgba(30,215,96,.35); }
+  .chip .c { opacity: .6; margin-left: 4px; }
+
+  main { padding: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px 16px; }
+  .card { cursor: pointer; transition: transform .2s; }
+  .card:active { transform: scale(.97); }
+  @media (hover: hover) { .card:hover { transform: translateY(-3px); } }
+  .card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--r-md);
+    background: var(--panel); display: block; box-shadow: var(--shadow); }
+  .card .t { font-size: 14px; font-weight: 600; margin-top: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .s { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .artist-h { margin: 28px 0 12px; }
+  .artist-h:first-child { margin-top: 4px; }
+  .artist-h .n { font-size: 18px; font-weight: 700; }
+  .artist-h .g { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
   .list { display: flex; flex-direction: column; gap: 2px; }
-  .trk { display: flex; gap: 10px; align-items: center; padding: 6px; border-radius: 8px; cursor: pointer; }
-  .trk:hover, .trk:active { background: var(--panel); }
-  .trk img { width: 44px; height: 44px; border-radius: 6px; object-fit: cover; flex: none; }
-  .trk .n { width: 22px; text-align: right; color: var(--muted); font-size: 13px; flex: none; }
+  .trk { display: flex; gap: 12px; align-items: center; padding: 8px; border-radius: var(--r-md); cursor: pointer; transition: background .15s; }
+  .trk:active, .trk:hover { background: rgba(255,255,255,.05); }
+  .trk img { width: 46px; height: 46px; border-radius: 10px; object-fit: cover; flex: none; }
+  .trk .n { width: 24px; text-align: right; color: var(--muted); font-size: 13px; flex: none; }
   .trk .meta { min-width: 0; flex: 1; }
-  .trk .t { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .trk .s { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .trk .t { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .trk .s { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .trk .d { font-size: 12px; color: var(--muted); flex: none; }
   .center { text-align: center; padding: 60px 20px; color: var(--muted); }
-  .sheet { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 10; display: none; }
-  .sheet.on { display: block; }
-  .sheet .inner { position: absolute; left: 0; right: 0; bottom: 0; max-height: 92vh; overflow: auto;
-    background: var(--panel); border-radius: 16px 16px 0 0; padding: 18px 16px calc(24px + env(safe-area-inset-bottom)); }
+
+  /* Albumvy */
+  .sheet { position: fixed; inset: 0; z-index: 10; background: rgba(8,8,12,.55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .sheet.on { opacity: 1; pointer-events: auto; }
+  .panel { position: absolute; left: 0; right: 0; bottom: 0; top: calc(44px + env(safe-area-inset-top));
+    background: var(--panel); border-radius: 26px 26px 0 0; overflow: hidden; display: flex; flex-direction: column;
+    transform: translateY(40px); transition: transform .3s cubic-bezier(.2,.8,.2,1); box-shadow: 0 -10px 40px rgba(0,0,0,.4); }
+  .sheet.on .panel { transform: none; }
   @media (min-width: 800px) {
-    .sheet .inner { left: 50%; transform: translateX(-50%); width: 640px; bottom: 5vh; border-radius: 16px; max-height: 90vh; }
+    .panel { left: 50%; width: 660px; margin-left: -330px; top: 6vh; bottom: 6vh; border-radius: 26px; }
   }
-  .hero { display: flex; gap: 16px; align-items: flex-end; margin-bottom: 14px; }
-  .hero img { width: 140px; height: 140px; border-radius: var(--radius); object-fit: cover; flex: none; }
-  .hero .t { font-size: 20px; font-weight: 700; }
-  .hero .s { color: var(--muted); font-size: 14px; margin: 4px 0 10px; }
-  .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%);
-    background: #333; padding: 10px 16px; border-radius: 20px; font-size: 14px; z-index: 20;
-    opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90vw; text-align: center; }
-  .toast.on { opacity: 1; }
+  .panel .bgart { position: absolute; inset: 0 0 auto 0; height: 320px; background-size: cover; background-position: center;
+    filter: blur(40px) saturate(1.3); opacity: .5; transform: scale(1.3); transform-origin: top; pointer-events: none;
+    -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent 95%); mask-image: linear-gradient(to bottom, #000 30%, transparent 95%); }
+  .panel .grab { position: relative; height: 22px; flex: none; display: grid; place-items: center; }
+  .panel .grab::before { content: ""; width: 40px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.3); }
+  .panel .close { position: absolute; top: 12px; right: 12px; z-index: 2; background: rgba(0,0,0,.35); border: none;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .panel .scroll { position: relative; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+    padding: 6px 18px calc(28px + env(safe-area-inset-bottom)); flex: 1; }
+  .hero { text-align: center; margin-bottom: 18px; }
+  .hero img { width: min(62vw, 240px); aspect-ratio: 1; border-radius: var(--r-lg); object-fit: cover; box-shadow: 0 18px 40px rgba(0,0,0,.5); }
+  .hero .t { font-size: 22px; font-weight: 700; margin-top: 16px; letter-spacing: -.2px; }
+  .hero .s { color: var(--muted); font-size: 14px; margin: 4px 0 6px; }
+  .hero .g { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 10px 0 14px; }
+  .hero .g span { font-size: 12px; padding: 4px 10px; border-radius: var(--r-pill); background: rgba(255,255,255,.08); color: var(--muted); }
+
+  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 10px);
+    background: rgba(50,52,62,.95); padding: 11px 18px; border-radius: var(--r-pill); font-size: 14px; z-index: 20;
+    opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; max-width: 90vw; text-align: center; box-shadow: var(--shadow); }
+  .toast.on { opacity: 1; transform: translate(-50%, 0); }
 </style>
 </head>
 <body>
@@ -72,25 +114,34 @@
   <div class="row">
     <h1>Hyllan</h1>
     <select id="plSel" title="Spellista"></select>
-    <button id="reload" title="Ladda om">⟳</button>
+    <button id="reload" class="icon" title="Ladda om">⟳</button>
   </div>
-  <div class="row" style="margin-top:10px">
+  <div class="row" style="margin-top:12px">
     <input type="search" id="q" placeholder="Sök artist, album, låt…">
     <select id="sort">
       <option value="artist">Artist A–Ö</option>
-      <option value="date">Utgivning (nyast)</option>
-      <option value="added">Tillagd (senast)</option>
+      <option value="date">Utgivning</option>
+      <option value="added">Senast tillagd</option>
       <option value="name">Album A–Ö</option>
+      <option value="genre">Genre</option>
     </select>
   </div>
-  <div class="tabs">
+  <div class="seg">
     <button data-tab="albums" class="on">Album</button>
     <button data-tab="artists">Artister</button>
     <button data-tab="loose">Övriga låtar</button>
   </div>
+  <div class="chips" id="chips"></div>
 </header>
 <main id="main"><div class="center">Laddar…</div></main>
-<div class="sheet" id="sheet"><div class="inner" id="sheetInner"></div></div>
+<div class="sheet" id="sheet">
+  <div class="panel" id="panel">
+    <div class="bgart" id="bgart"></div>
+    <div class="grab" id="grab"></div>
+    <button class="icon close" id="close" title="Stäng">✕</button>
+    <div class="scroll" id="sheetInner"></div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -101,9 +152,11 @@ const REDIRECT_URI = location.hostname === 'ukeitaro0.github.io'
   : location.origin + location.pathname;
 const SCOPES = 'playlist-read-private playlist-read-collaborative user-read-playback-state user-modify-playback-state';
 const DEFAULT_PLAYLIST_NAME = '2026';
-const MIN_TRACKS_IF_UNKNOWN = 4; // om Spotify inte skickar antal spår på albumet
+const ALBUM_TYPES = ['album', 'compilation'];   // singlar och EP:er räknas som "övriga"
+const GENRE_CACHE_DAYS = 30;
+const GENRE_CHIPS_SHOWN = 14;
 
-// ===== Lagring (tål att localStorage saknas) =====
+// ===== Lagring =====
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch {} },
@@ -114,7 +167,7 @@ const $ = id => document.getElementById(id);
 function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 function toast(msg, ms = 2600) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('on'), ms); }
 
-// ===== Inloggning (PKCE, ingen hemlig nyckel) =====
+// ===== Inloggning (PKCE) =====
 function b64url(buf) { return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
 function randomString(n = 64) { const a = new Uint8Array(n); crypto.getRandomValues(a); return b64url(a).slice(0, n); }
 
@@ -148,12 +201,14 @@ async function handleRedirect() {
   store.del('pkce_verifier');
 }
 
+let refreshing = null;
 async function getToken() {
   if (store.get('access_token') && Date.now() < Number(store.get('expires_at') || 0)) return store.get('access_token');
   const rt = store.get('refresh_token');
   if (!rt) return null;
-  try { await tokenRequest({ client_id: CLIENT_ID, grant_type: 'refresh_token', refresh_token: rt }); }
-  catch { store.del('refresh_token'); store.del('access_token'); return null; }
+  refreshing = refreshing || tokenRequest({ client_id: CLIENT_ID, grant_type: 'refresh_token', refresh_token: rt })
+    .catch(() => { store.del('refresh_token'); store.del('access_token'); }).finally(() => { refreshing = null; });
+  await refreshing;
   return store.get('access_token');
 }
 
@@ -163,10 +218,10 @@ async function api(path, opts = {}) {
   if (!token) { showLogin(); throw new Error('Inte inloggad'); }
   const url = path.startsWith('http') ? path : 'https://api.spotify.com/v1' + path;
   const r = await fetch(url, { ...opts, headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', ...(opts.headers || {}) } });
-  if (r.status === 429) { const wait = Number(r.headers.get('Retry-After') || 2); await new Promise(res => setTimeout(res, wait * 1000)); return api(path, opts); }
+  if (r.status === 429) { const wait = Math.min(Number(r.headers.get('Retry-After') || 2), 30); await new Promise(res => setTimeout(res, wait * 1000)); return api(path, opts); }
   if (r.status === 204) return null;
   const txt = await r.text();
-  const j = txt ? JSON.parse(txt) : null;
+  let j = null; try { j = txt ? JSON.parse(txt) : null; } catch {}
   if (!r.ok) { const e = new Error(j?.error?.message || ('HTTP ' + r.status)); e.status = r.status; e.reason = j?.error?.reason; throw e; }
   return j;
 }
@@ -178,8 +233,10 @@ async function getAll(path) {
 }
 
 // ===== Data =====
-let playlists = [], tracks = [], albums = [], loose = [];
-let tab = 'albums';
+let tracks = [], albums = [], loose = [];
+let tab = 'albums', genreFilter = null, showAllGenres = false;
+let genreCache = {};
+try { genreCache = JSON.parse(store.get('genres_v1') || '{}'); } catch {}
 
 function bestImage(imgs, min = 300) {
   if (!imgs || !imgs.length) return '';
@@ -190,9 +247,16 @@ const artistNames = list => (list || []).map(a => a.name).join(', ');
 const year = d => (d || '').slice(0, 4);
 const fmtDur = ms => { const s = Math.round(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 const sortKey = s => (s || '').toLocaleLowerCase('sv').replace(/^the /, '');
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+function genresOf(artists) {
+  const set = new Set();
+  (artists || []).forEach(a => (genreCache[a.id]?.g || []).forEach(g => set.add(g)));
+  return [...set];
+}
 
 async function loadPlaylists() {
-  playlists = await getAll('/me/playlists?limit=50');
+  const playlists = await getAll('/me/playlists?limit=50');
   const sel = $('plSel'); sel.innerHTML = '';
   playlists.forEach(p => { const o = el('option', null, p.name); o.value = p.id; sel.appendChild(o); });
   const saved = store.get('playlist_id');
@@ -204,6 +268,7 @@ async function loadPlaylists() {
 async function loadPlaylist(id) {
   $('main').innerHTML = '<div class="center">Hämtar låtar…</div>';
   store.set('playlist_id', id);
+  genreFilter = null;
   const items = await getAll(`/playlists/${id}/items?limit=50`);
   tracks = items.map(it => ({ t: it.item || it.track, added: it.added_at }))
     .filter(x => x.t && x.t.type !== 'episode' && x.t.album && !x.t.is_local);
@@ -219,12 +284,11 @@ async function loadPlaylist(id) {
   albums = []; loose = [];
   for (const g of byAlbum.values()) {
     const a = g.album, n = g.items.length;
-    const total = a.total_tracks;
-    const isSingleTrack = (total === 1) || (a.album_type === 'single' && n === 1);
-    const complete = total ? n >= total : n >= MIN_TRACKS_IF_UNKNOWN;
+    const isRealAlbum = ALBUM_TYPES.includes((a.album_type || '').toLowerCase());
+    const complete = a.total_tracks ? n >= a.total_tracks : n >= 4;
     g.items.sort((x, y) => (x.t.disc_number - y.t.disc_number) || (x.t.track_number - y.t.track_number));
-    if (complete && !isSingleTrack) {
-      albums.push({ id: a.id, uri: a.uri, name: a.name, artist: artistNames(a.artists), date: a.release_date,
+    if (isRealAlbum && complete) {
+      albums.push({ id: a.id, uri: a.uri, name: a.name, artists: a.artists, artist: artistNames(a.artists), date: a.release_date,
         img: bestImage(a.images), imgBig: bestImage(a.images, 600), items: g.items,
         added: g.items.reduce((m, x) => x.added > m ? x.added : m, '') });
     } else {
@@ -232,20 +296,69 @@ async function loadPlaylist(id) {
     }
   }
   render();
+  loadGenres();
+}
+
+// Genre finns bara på artistnivå hos Spotify. Hämtas en artist i taget och sparas lokalt i 30 dagar.
+async function loadGenres() {
+  const ids = new Set();
+  tracks.forEach(({ t }) => t.artists.forEach(a => a.id && ids.add(a.id)));
+  const fresh = Date.now() - GENRE_CACHE_DAYS * 864e5;
+  const todo = [...ids].filter(id => !(genreCache[id] && genreCache[id].ts > fresh));
+  if (!todo.length) return;
+  let done = 0;
+  const worker = async () => {
+    while (todo.length) {
+      const id = todo.shift();
+      try { const a = await api('/artists/' + id); genreCache[id] = { g: a.genres || [], ts: Date.now() }; }
+      catch (e) { if (e.status === 403 || e.status === 404) genreCache[id] = { g: [], ts: Date.now() }; }
+      if (++done % 10 === 0) { store.set('genres_v1', JSON.stringify(genreCache)); renderChips(); }
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+  store.set('genres_v1', JSON.stringify(genreCache));
+  render();
 }
 
 // ===== Visning =====
-function matches(...fields) {
+function matchesSearch(...fields) {
   const q = sortKey($('q').value.trim());
   return !q || fields.some(f => sortKey(f).includes(q));
 }
+const matchesGenre = artists => !genreFilter || genresOf(artists).includes(genreFilter);
 
-function sortedAlbums(list) {
+function currentPool() {
+  return tab === 'loose' ? loose.map(x => x.t.artists) : albums.map(a => a.artists);
+}
+
+function renderChips() {
+  const box = $('chips'); box.innerHTML = '';
+  const count = new Map();
+  currentPool().forEach(artists => genresOf(artists).forEach(g => count.set(g, (count.get(g) || 0) + 1)));
+  if (!count.size) { box.hidden = true; return; }
+  box.hidden = false;
+  let list = [...count.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const more = list.length > GENRE_CHIPS_SHOWN && !showAllGenres;
+  if (more) list = list.slice(0, GENRE_CHIPS_SHOWN);
+  if (genreFilter && !list.some(([g]) => g === genreFilter)) list.unshift([genreFilter, count.get(genreFilter) || 0]);
+  const add = (label, on, fn, c) => {
+    const b = el('button', 'chip' + (on ? ' on' : ''), label);
+    if (c != null) b.appendChild(el('span', 'c', String(c)));
+    b.onclick = fn; box.appendChild(b);
+  };
+  add('Alla genrer', !genreFilter, () => { genreFilter = null; render(); });
+  list.forEach(([g, c]) => add(cap(g), genreFilter === g, () => { genreFilter = genreFilter === g ? null : g; render(); }, c));
+  if (more) add('Fler…', false, () => { showAllGenres = true; renderChips(); });
+}
+
+function sortAlbums(list) {
   const s = $('sort').value, c = (a, b) => a.localeCompare(b, 'sv');
+  const firstGenre = a => genresOf(a.artists).sort()[0] || '~';
   return [...list].sort((a, b) =>
     s === 'date' ? (b.date || '').localeCompare(a.date || '') :
     s === 'added' ? (b.added || '').localeCompare(a.added || '') :
     s === 'name' ? c(sortKey(a.name), sortKey(b.name)) :
+    s === 'genre' ? c(firstGenre(a), firstGenre(b)) || c(sortKey(a.artist), sortKey(b.artist)) :
     c(sortKey(a.artist), sortKey(b.artist)) || (a.date || '').localeCompare(b.date || ''));
 }
 
@@ -271,39 +384,49 @@ function trackRow(t, { num, onPlay, showCover = true }) {
   return r;
 }
 
+function grid(list) { const g = el('div', 'grid'); list.forEach(a => g.appendChild(albumCard(a))); return g; }
+
 function render() {
+  renderChips();
   const main = $('main'); main.innerHTML = '';
   if (!tracks.length) { main.innerHTML = '<div class="center">Spellistan är tom, eller går inte att läsa (Spotify lämnar bara ut innehåll i listor du äger eller samarbetar på).</div>'; return; }
 
   if (tab === 'albums') {
-    const list = sortedAlbums(albums.filter(a => matches(a.name, a.artist)));
-    if (!list.length) { main.appendChild(el('div', 'center', 'Inga hela album hittades.')); return; }
-    const g = el('div', 'grid'); list.forEach(a => g.appendChild(albumCard(a))); main.appendChild(g);
+    const list = sortAlbums(albums.filter(a => matchesSearch(a.name, a.artist) && matchesGenre(a.artists)));
+    if (!list.length) return main.appendChild(el('div', 'center', 'Inga album matchar.'));
+    if ($('sort').value === 'genre') {
+      const groups = new Map();
+      list.forEach(a => { const g = genresOf(a.artists).sort()[0] || 'Ingen genre angiven'; (groups.get(g) || groups.set(g, []).get(g)).push(a); });
+      groups.forEach((l, g) => { const h = el('div', 'artist-h'); h.appendChild(el('div', 'n', cap(g))); main.appendChild(h); main.appendChild(grid(l)); });
+    } else main.appendChild(grid(list));
   }
 
   if (tab === 'artists') {
     const byArtist = new Map();
-    albums.filter(a => matches(a.name, a.artist)).forEach(a => { (byArtist.get(a.artist) || byArtist.set(a.artist, []).get(a.artist)).push(a); });
+    albums.filter(a => matchesSearch(a.name, a.artist) && matchesGenre(a.artists))
+      .forEach(a => { (byArtist.get(a.artist) || byArtist.set(a.artist, []).get(a.artist)).push(a); });
     const names = [...byArtist.keys()].sort((a, b) => sortKey(a).localeCompare(sortKey(b), 'sv'));
-    if (!names.length) { main.appendChild(el('div', 'center', 'Inga träffar.')); return; }
+    if (!names.length) return main.appendChild(el('div', 'center', 'Inga träffar.'));
     names.forEach(n => {
-      main.appendChild(el('h2', null, n));
-      const g = el('div', 'grid');
-      byArtist.get(n).sort((a, b) => (b.date || '').localeCompare(a.date || '')).forEach(a => g.appendChild(albumCard(a)));
-      main.appendChild(g);
+      const list = byArtist.get(n).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+      const h = el('div', 'artist-h');
+      h.appendChild(el('div', 'n', n));
+      const gs = genresOf(list[0].artists).slice(0, 3);
+      if (gs.length) h.appendChild(el('div', 'g', gs.map(cap).join(' · ')));
+      main.appendChild(h); main.appendChild(grid(list));
     });
   }
 
   if (tab === 'loose') {
     const s = $('sort').value;
-    const list = loose.filter(x => matches(x.t.name, artistNames(x.t.artists), x.t.album.name)).sort((a, b) =>
+    const list = loose.filter(x => matchesSearch(x.t.name, artistNames(x.t.artists), x.t.album.name) && matchesGenre(x.t.artists)).sort((a, b) =>
       s === 'added' ? (b.added || '').localeCompare(a.added || '') :
       s === 'date' ? (b.t.album.release_date || '').localeCompare(a.t.album.release_date || '') :
       s === 'name' ? sortKey(a.t.name).localeCompare(sortKey(b.t.name), 'sv') :
       sortKey(artistNames(a.t.artists)).localeCompare(sortKey(artistNames(b.t.artists)), 'sv'));
-    if (!list.length) { main.appendChild(el('div', 'center', 'Inga lösa låtar.')); return; }
-    const playBtn = el('button', 'primary', '▶ Spela alla ' + list.length);
-    playBtn.style.marginBottom = '12px';
+    if (!list.length) return main.appendChild(el('div', 'center', 'Inga lösa låtar matchar.'));
+    const playBtn = el('button', 'primary', '▶  Spela alla ' + list.length);
+    playBtn.style.marginBottom = '14px';
     const uris = list.map(x => x.t.uri);
     playBtn.onclick = () => play({ uris });
     main.appendChild(playBtn);
@@ -313,23 +436,57 @@ function render() {
   }
 }
 
+// ===== Albumvy: stängs med ✕, tryck utanför, Esc, dra nedåt eller telefonens bakåtknapp =====
+let sheetOpen = false;
 function openAlbum(a) {
-  const inner = $('sheetInner'); inner.innerHTML = '';
+  const inner = $('sheetInner'); inner.innerHTML = ''; inner.scrollTop = 0;
+  $('bgart').style.backgroundImage = `url("${a.imgBig}")`;
   const hero = el('div', 'hero');
   const img = el('img'); img.src = a.imgBig; img.alt = ''; hero.appendChild(img);
-  const info = el('div');
-  info.appendChild(el('div', 't', a.name));
-  info.appendChild(el('div', 's', a.artist + (a.date ? ' · ' + year(a.date) : '') + ' · ' + a.items.length + ' låtar'));
-  const pb = el('button', 'primary', '▶ Spela'); pb.onclick = () => play({ context_uri: a.uri }, a.uri);
-  info.appendChild(pb);
-  hero.appendChild(info); inner.appendChild(hero);
+  hero.appendChild(el('div', 't', a.name));
+  hero.appendChild(el('div', 's', a.artist + (a.date ? ' · ' + year(a.date) : '') + ' · ' + a.items.length + ' låtar'));
+  const gs = genresOf(a.artists).slice(0, 4);
+  if (gs.length) { const g = el('div', 'g'); gs.forEach(x => g.appendChild(el('span', null, cap(x)))); hero.appendChild(g); }
+  const pb = el('button', 'primary', '▶  Spela'); pb.onclick = () => play({ context_uri: a.uri }, a.uri);
+  hero.appendChild(pb);
+  inner.appendChild(hero);
   const l = el('div', 'list');
   a.items.forEach(x => l.appendChild(trackRow(x.t, { num: x.t.track_number, showCover: false,
     onPlay: () => play({ context_uri: a.uri, offset: { uri: x.t.uri } }, x.t.uri) })));
   inner.appendChild(l);
-  $('sheet').classList.add('on');
+  $('sheet').classList.add('on'); document.body.classList.add('locked');
+  if (!sheetOpen) { history.pushState({ sheet: 1 }, ''); sheetOpen = true; }
 }
-$('sheet').onclick = e => { if (e.target.id === 'sheet') $('sheet').classList.remove('on'); };
+function hideSheet() {
+  $('sheet').classList.remove('on'); document.body.classList.remove('locked');
+  $('panel').style.transform = ''; sheetOpen = false;
+}
+function closeSheet() { if (sheetOpen) history.back(); else hideSheet(); }
+window.addEventListener('popstate', () => { if (sheetOpen) hideSheet(); });
+$('close').onclick = closeSheet;
+$('sheet').onclick = e => { if (e.target.id === 'sheet') closeSheet(); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && sheetOpen) closeSheet(); });
+
+// Dra nedåt för att stänga (från greppet, eller när listan är högst upp)
+(() => {
+  let y0 = null, dy = 0;
+  const panel = $('panel'), sc = $('sheetInner');
+  panel.addEventListener('touchstart', e => {
+    const onGrab = e.target.id === 'grab';
+    if (onGrab || sc.scrollTop <= 0) { y0 = e.touches[0].clientY; dy = 0; } else y0 = null;
+  }, { passive: true });
+  panel.addEventListener('touchmove', e => {
+    if (y0 == null) return;
+    dy = e.touches[0].clientY - y0;
+    if (dy > 0) { panel.style.transition = 'none'; panel.style.transform = `translateY(${dy}px)`; }
+  }, { passive: true });
+  panel.addEventListener('touchend', () => {
+    if (y0 == null) return;
+    panel.style.transition = '';
+    if (dy > 110) closeSheet(); else panel.style.transform = '';
+    y0 = null;
+  });
+})();
 
 // ===== Uppspelning (styr Spotify-appen) =====
 async function play(body, fallbackUri) {
@@ -337,9 +494,8 @@ async function play(body, fallbackUri) {
     await api('/me/player/play', { method: 'PUT', body: JSON.stringify(body) });
     toast('Spelar ▶'); return;
   } catch (e) {
-    if (e.status !== 404 && e.reason !== 'NO_ACTIVE_DEVICE') { if (e.status === 403) toast('Spotify nekade: ' + e.message, 4000); else toast('Fel: ' + e.message, 4000); if (e.status !== 404) return; }
+    if (e.status !== 404) { toast((e.status === 403 ? 'Spotify nekade: ' : 'Fel: ') + e.message, 4000); return; }
   }
-  // Ingen aktiv enhet: försök väcka en känd enhet
   try {
     const { devices } = await api('/me/player/devices');
     const d = (devices || []).find(x => !x.is_restricted);
@@ -348,7 +504,6 @@ async function play(body, fallbackUri) {
       toast('Spelar på ' + d.name + ' ▶'); return;
     }
   } catch {}
-  // Sista utvägen: öppna i Spotify-appen
   toast('Ingen aktiv Spotify-enhet, öppnar appen…', 3000);
   if (fallbackUri) setTimeout(() => { location.href = fallbackUri; }, 600);
 }
@@ -358,14 +513,14 @@ function showLogin(msg) {
   $('hdr').hidden = true;
   const main = $('main'); main.innerHTML = '';
   const box = el('div', 'center');
-  if (msg) { const p = el('p', null, msg); p.style.color = '#f77'; box.appendChild(p); }
+  if (msg) { const p = el('p', null, msg); p.style.color = '#f88'; box.appendChild(p); }
   box.appendChild(el('p', null, 'Logga in med Spotify för att visa din hylla.'));
   const b = el('button', 'primary', 'Logga in med Spotify'); b.onclick = login; box.appendChild(b);
   main.appendChild(box);
 }
 
-document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
-  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+document.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.seg button').forEach(x => x.classList.toggle('on', x === b));
   tab = b.dataset.tab; render(); window.scrollTo(0, 0);
 });
 $('q').oninput = render;
