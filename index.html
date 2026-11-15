@@ -983,6 +983,13 @@ function openSettings() {
       inv.textContent = `${all.length} spellistor totalt. ${readable.length} är dina egna eller samarbeten och går att läsa in, `
         + `med sammanlagt ${unknown ? 'okänt antal' : sum(readable).toLocaleString('sv')} låtar. `
         + `${all.length - readable.length} är andras listor som du följer, och dem lämnar Spotify inte ut.`;
+      const others = all.filter(p => !(p.owner === me.id || p.collab));
+      if (others.length) {
+        const d = el('details'); d.style.margin = '-6px 0 16px'; d.style.color = 'var(--muted)'; d.style.fontSize = '13px';
+        d.appendChild(el('summary', null, 'Visa vilka som inte går att läsa'));
+        others.forEach(p => d.appendChild(el('div', null, `${p.name}  (ägare: ${p.owner || '?'})`)));
+        inv.after(d);
+      }
     } catch (e) { inv.textContent = 'Kunde inte räkna: ' + e.message; }
   })();
   box.appendChild(el('h3', null, 'Genrer'));
