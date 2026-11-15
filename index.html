@@ -65,11 +65,18 @@
   .toolbar .info { color: var(--muted); font-size: 13px; }
   .toolbar .r { display: flex; gap: 8px; }
   .trk .gtag { color: var(--accent); }
+  .trk .dup { color: #f5b14c; }
+  button.danger { background: rgba(255,90,90,.14); color: #ff8a8a; border-color: rgba(255,90,90,.3); }
+  button.danger.solid { background: #e5484d; color: #fff; border: none; font-weight: 700; padding: 11px 22px; }
+  .chip.warn.on { background: rgba(245,177,76,.16); color: #f5b14c; border-color: rgba(245,177,76,.4); }
+  .loose-h { font-size: 13px; color: var(--muted); margin: 16px 0 4px; font-weight: 600; }
+  .confirm-list { max-height: 40vh; overflow: auto; margin: 10px 0 18px; }
   .selbar { position: fixed; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 13; display: flex; gap: 8px;
     padding: 10px; border-radius: 22px; background: rgba(38,40,50,.92); backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px);
     border: 1px solid var(--line); box-shadow: 0 12px 34px rgba(0,0,0,.45); transform: translateY(calc(100% + 170px)); opacity: 0; pointer-events: none;
     transition: transform .3s cubic-bezier(.2,.8,.2,1), opacity .2s; }
   .selbar.on { transform: none; opacity: 1; pointer-events: auto; }
+  body.locked .selbar.on { opacity: 0; pointer-events: none; }
   .selbar .primary { flex: 1; }
   @media (min-width: 800px) { .selbar { left: 50%; right: auto; width: 640px; margin-left: -320px; } }
   .chip.part { color: var(--accent); border-style: dashed; border-color: rgba(30,215,96,.4); }
@@ -224,7 +231,7 @@
   <div class="bar" id="pBar"><div class="fill" id="pFill"></div></div>
   <div class="times"><span id="pPos">0:00</span><span id="pDur">0:00</span></div>
 </div>
-<div class="selbar" id="selbar"><button id="selCancel">Avbryt</button><button class="primary" id="selGo">Sätt genre</button></div>
+<div class="selbar" id="selbar"><button id="selCancel">Avbryt</button><button class="danger" id="selDel" hidden>Ta bort</button><button class="primary" id="selGo">Sätt genre</button></div>
 <div class="toast" id="toast"></div>
 
 <script src="config.js"></script>
@@ -234,7 +241,7 @@ const CLIENT_ID = '60281313632147df82bb02cdd1691929';
 const REDIRECT_URI = location.hostname === 'ukeitaro0.github.io'
   ? 'https://ukeitaro0.github.io/spotify-hylla/'
   : location.origin + location.pathname;
-const SCOPES = 'playlist-read-private playlist-read-collaborative user-read-playback-state user-modify-playback-state';
+const SCOPES = 'playlist-read-private playlist-read-collaborative playlist-modify-private playlist-modify-public user-read-playback-state user-modify-playback-state';
 const DEFAULT_PLAYLIST_NAME = '2026';
 const ALBUM_TYPES = ['album', 'compilation'];   // singlar och EP:er räknas som "övriga"
 const GENRE_CACHE_DAYS = 30;
@@ -275,6 +282,7 @@ async function tokenRequest(params) {
   store.set('access_token', j.access_token);
   store.set('expires_at', String(Date.now() + (j.expires_in - 60) * 1000));
   if (j.refresh_token) store.set('refresh_token', j.refresh_token);
+  if (j.scope) store.set('scope', j.scope);
 }
 
 async function handleRedirect() {
@@ -322,7 +330,7 @@ async function getAll(path) {
 // ===== Data =====
 let tracks = [], albums = [], loose = [];
 let tab = 'albums', mainFilter = null, subFilter = null, showAllGenres = false;
-let selecting = false; const selected = new Set();
+let selecting = false; const selected = new Set(); let dupOnly = false; let dupKeys = new Set();
 const NONE = '__none__';
 let curId = null, plMap = new Map();
 let genreCache = {};
@@ -450,7 +458,15 @@ function build(items) {
       g.items.forEach(x => loose.push(x));
     }
   }
+  // Lösa låtar som också finns på ett album i listan = dubbletter (t.ex. singel som sedan kom på skivan)
+  dupKeys = new Set();
+  albums.forEach(a => a.items.forEach(x => dupKeys.add(trackKey(x.t))));
 }
+const normTitle = s => (s || '').toLowerCase().replace(/\s*[\(\[][^\)\]]*[\)\]]/g, '').replace(/\s+-\s+.*$/, '')
+  .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+const trackKey = t => (t.artists?.[0]?.id || '') + '|' + normTitle(t.name);
+const isDup = t => dupKeys.has(trackKey(t));
+const primaryArtist = list => list?.[0]?.name || 'Okänd artist';
 
 async function loadPlaylist(id, force = false) {
   const snapshot = plMap.get(id)?.snapshot_id || null;
@@ -599,18 +615,21 @@ function albumCard(a) {
 
 function trackRow(t, { num, onPlay, showCover = true, showGenre = false }) {
   const r = el('div', 'trk'); r.dataset.uri = t.uri;
-  if (selecting && showGenre) { const on = selected.has(t.album.id); r.appendChild(el('div', 'chk', on ? '✓' : '')); if (on) r.classList.add('sel'); }
+  if (selecting && showGenre) { const on = selected.has(t.uri); r.appendChild(el('div', 'chk', on ? '✓' : '')); if (on) r.classList.add('sel'); }
   if (ps && ps.item && ps.item.uri === t.uri) r.classList.add('playing');
   if (showCover) { const img = el('img'); img.loading = 'lazy'; img.alt = ''; img.src = bestImage(t.album.images, 64); r.appendChild(img); }
   else r.appendChild(el('div', 'n', String(num)));
   const m = el('div', 'meta');
   m.appendChild(el('div', 't', t.name));
   const sub = el('div', 's', artistNames(t.artists) + (showCover ? ' · ' + t.album.name : ''));
-  if (showGenre) { const o = ownFor(t.album.id); if (o.main) { sub.appendChild(document.createTextNode(' · ')); sub.appendChild(el('span', 'gtag', [o.main, ...o.subs].join(', '))); } }
+  if (showGenre) {
+    if (isDup(t)) { sub.appendChild(document.createTextNode(' · ')); sub.appendChild(el('span', 'dup', 'finns på album')); }
+    const o = ownFor(t.album.id); if (o.main) { sub.appendChild(document.createTextNode(' · ')); sub.appendChild(el('span', 'gtag', [o.main, ...o.subs].join(', '))); }
+  }
   m.appendChild(sub);
   r.appendChild(m);
   r.appendChild(el('div', 'd', fmtDur(t.duration_ms)));
-  r.onclick = (selecting && showGenre) ? () => toggleSel(t.album.id) : onPlay;
+  r.onclick = (selecting && showGenre) ? () => toggleSel(t.uri) : onPlay;
   return r;
 }
 
@@ -635,24 +654,35 @@ function render() {
   }
 
   if (tab === 'artists') {
-    const byArtist = new Map();
-    albums.filter(a => matchesSearch(a.name, a.artist) && matchesGenre(a.id))
-      .forEach(a => { (byArtist.get(a.artist) || byArtist.set(a.artist, []).get(a.artist)).push(a); });
-    const names = [...byArtist.keys()].sort((a, b) => sortKey(a).localeCompare(sortKey(b), 'sv'));
+    const groups = new Map();
+    const g = n => groups.get(n) || groups.set(n, { albums: [], loose: [] }).get(n);
+    albums.filter(a => matchesSearch(a.name, a.artist) && matchesGenre(a.id)).forEach(a => g(primaryArtist(a.artists)).albums.push(a));
+    loose.filter(x => matchesSearch(x.t.name, artistNames(x.t.artists), x.t.album.name) && matchesGenre(x.t.album.id))
+      .forEach(x => g(primaryArtist(x.t.artists)).loose.push(x));
+    const names = [...groups.keys()].sort((a, b) => sortKey(a).localeCompare(sortKey(b), 'sv'));
     if (!names.length) return main.appendChild(el('div', 'center', 'Inga träffar.'));
     names.forEach(n => {
-      const list = byArtist.get(n).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+      const grp = groups.get(n);
+      const list = grp.albums.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
       const h = el('div', 'artist-h');
       h.appendChild(el('div', 'n', n));
-      const gs = [...new Set(list.flatMap(a => genresFor(a.id)))].slice(0, 4);
+      const gs = [...new Set([...list.map(a => a.id), ...grp.loose.map(x => x.t.album.id)].flatMap(genresFor))].slice(0, 4);
       if (gs.length) h.appendChild(el('div', 'g', gs.join(' · ')));
-      main.appendChild(h); main.appendChild(grid(list));
+      main.appendChild(h);
+      if (list.length) main.appendChild(grid(list));
+      if (grp.loose.length) {
+        if (list.length) main.appendChild(el('div', 'loose-h', 'Lösa låtar'));
+        const ls = grp.loose.sort((a, b) => (b.t.album.release_date || '').localeCompare(a.t.album.release_date || ''));
+        const uris = ls.map(x => x.t.uri), l = el('div', 'list');
+        ls.forEach((x, i) => l.appendChild(trackRow(x.t, { onPlay: () => play({ uris, offset: { position: i } }, x.t.uri) })));
+        main.appendChild(l);
+      }
     });
   }
 
   if (tab === 'loose') {
     const s = $('sort').value;
-    const list = loose.filter(x => matchesSearch(x.t.name, artistNames(x.t.artists), x.t.album.name) && matchesGenre(x.t.album.id)).sort((a, b) =>
+    const list = loose.filter(x => matchesSearch(x.t.name, artistNames(x.t.artists), x.t.album.name) && matchesGenre(x.t.album.id) && (!dupOnly || isDup(x.t))).sort((a, b) =>
       s === 'added' ? (b.added || '').localeCompare(a.added || '') :
       s === 'date' ? (b.t.album.release_date || '').localeCompare(a.t.album.release_date || '') :
       s === 'name' ? sortKey(a.t.name).localeCompare(sortKey(b.t.name), 'sv') :
@@ -660,7 +690,14 @@ function render() {
     const uris = list.map(x => x.t.uri);
     const playBtn = el('button', 'primary', '▶  Spela alla');
     playBtn.onclick = () => play({ uris });
-    main.appendChild(toolbar(list.length + ' låtar', list.map(x => x.t.album.id), list.length && !selecting ? playBtn : null));
+    main.appendChild(toolbar(list.length + ' låtar', list.map(x => x.t.uri), list.length && !selecting ? playBtn : null));
+    const nDup = loose.filter(x => isDup(x.t)).length;
+    if (nDup || dupOnly) {
+      const db = el('button', 'chip warn' + (dupOnly ? ' on' : ''), (dupOnly ? '✓ ' : '') + 'Dubbletter som finns på album');
+      db.appendChild(el('span', 'c', String(nDup))); db.style.marginBottom = '12px';
+      db.onclick = () => { dupOnly = !dupOnly; render(); };
+      main.appendChild(db);
+    }
     if (!list.length) return main.appendChild(el('div', 'center', 'Inga lösa låtar matchar.'));
     const l = el('div', 'list');
     list.forEach((x, i) => l.appendChild(trackRow(x.t, { showGenre: true, onPlay: () => play({ uris, offset: { position: i } }, x.t.uri) })));
@@ -692,11 +729,62 @@ function exitSelect() { if (!selecting) return; selecting = false; selected.clea
 function toggleSel(id) { selected.has(id) ? selected.delete(id) : selected.add(id); updateSelbar(); render(); }
 function updateSelbar() {
   $('selbar').classList.toggle('on', selecting);
+  $('selDel').hidden = tab !== 'loose';
+  $('selDel').disabled = !selected.size; $('selDel').style.opacity = selected.size ? 1 : .5;
   $('selGo').textContent = selected.size ? `Sätt genre (${selected.size})` : 'Sätt genre';
   $('selGo').disabled = !selected.size; $('selGo').style.opacity = selected.size ? 1 : .5;
 }
 $('selCancel').onclick = exitSelect;
-$('selGo').onclick = () => { if (selected.size) openGenreSheet([...selected]); };
+const selectedAlbumIds = () => tab === 'loose'
+  ? [...new Set(loose.filter(x => selected.has(x.t.uri)).map(x => x.t.album.id))]
+  : [...selected];
+$('selGo').onclick = () => { if (selected.size) openGenreSheet(selectedAlbumIds()); };
+$('selDel').onclick = () => { if (selected.size && tab === 'loose') confirmRemove([...selected]); };
+
+// ===== Ta bort låtar ur spellistan =====
+const canModify = () => (store.get('scope') || '').includes('playlist-modify');
+function confirmRemove(uris) {
+  const inner = $('sheetInner'); inner.innerHTML = ''; inner.scrollTop = 0;
+  $('bgart').style.backgroundImage = 'none';
+  const box = el('div', 'settings');
+  const pl = plMap.get(curId)?.name || 'spellistan';
+  box.appendChild(el('h3', null, `Ta bort ${uris.length} ${uris.length === 1 ? 'låt' : 'låtar'} från ”${pl}”?`));
+  if (!canModify()) {
+    box.appendChild(el('p', null, 'Sidan behöver ny behörighet för att få ändra i dina spellistor. Logga in med Spotify en gång till, sedan fungerar det.'));
+    const b = el('button', 'primary', 'Logga in igen'); b.onclick = login; box.appendChild(b);
+    inner.appendChild(box); showSheet(); return;
+  }
+  box.appendChild(el('p', null, 'Låtarna tas bort ur spellistan i Spotify. De finns kvar i Spotify i övrigt, men det går inte att ångra härifrån.'));
+  const l = el('div', 'list confirm-list');
+  loose.filter(x => uris.includes(x.t.uri)).forEach(x => l.appendChild(trackRow(x.t, { onPlay: () => {} })));
+  box.appendChild(l);
+  const row = el('div', 'row');
+  const go = el('button', 'danger solid', 'Ta bort');
+  const no = el('button', null, 'Avbryt'); no.onclick = closeSheet;
+  go.onclick = async () => {
+    go.disabled = true; go.textContent = 'Tar bort…';
+    try { await removeFromPlaylist(uris); exitSelect(); closeSheet(); toast(`Tog bort ${uris.length} ${uris.length === 1 ? 'låt' : 'låtar'}`); }
+    catch (e) {
+      go.disabled = false; go.textContent = 'Ta bort';
+      if (e.status === 401 || e.status === 403) { toast('Spotify nekade. Prova att logga in igen.', 4000); }
+      else toast('Fel: ' + e.message, 4000);
+    }
+  };
+  row.appendChild(no); row.appendChild(go); box.appendChild(row);
+  inner.appendChild(box); showSheet();
+}
+async function removeFromPlaylist(uris) {
+  let snapshot = null;
+  for (let i = 0; i < uris.length; i += 100) {
+    const r = await api(`/playlists/${curId}/items`, { method: 'DELETE', body: JSON.stringify({ items: uris.slice(i, i + 100).map(uri => ({ uri })) }) });
+    if (r && r.snapshot_id) snapshot = r.snapshot_id;
+  }
+  const gone = new Set(uris);
+  const items = tracks.filter(x => !gone.has(x.t.uri));
+  if (snapshot && plMap.get(curId)) plMap.get(curId).snapshot_id = snapshot;
+  writeCache({ id: curId, snapshot, items });
+  build(items); render();
+}
 
 function openGenreSheet(ids) {
   const inner = $('sheetInner'); inner.innerHTML = ''; inner.scrollTop = 0;
