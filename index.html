@@ -335,7 +335,15 @@ async function api(path, opts = {}) {
   if (!token) { showLogin(); throw new Error('Inte inloggad'); }
   const url = path.startsWith('http') ? path : 'https://api.spotify.com/v1' + path;
   const r = await fetch(url, { ...opts, headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', ...(opts.headers || {}) } });
-  if (r.status === 429) { const wait = Math.min(Number(r.headers.get('Retry-After') || 2), 30); await new Promise(res => setTimeout(res, wait * 1000)); return api(path, opts); }
+  if (r.status === 429) {
+    // Kort väntan: försök igen. Lång spärr: sluta fråga, annars förlängs spärren.
+    const wait = Number(r.headers.get('Retry-After') || 2);
+    if (wait > 60) {
+      store.set('blocked_until', String(Date.now() + wait * 1000));
+      const e = new Error(`Spotify har pausat appen i ${Math.ceil(wait / 60)} min för för många anrop.`); e.status = 429; throw e;
+    }
+    await new Promise(res => setTimeout(res, wait * 1000)); return api(path, opts);
+  }
   if (r.status === 204) return null;
   const txt = await r.text();
   let j = null; try { j = txt ? JSON.parse(txt) : null; } catch {}
@@ -422,7 +430,8 @@ function fillPlaylistSelect(list, pickId) {
   if (pickId) sel.value = pickId;
 }
 async function loadPlaylists() {
-  const playlists = (await getAll('/me/playlists?limit=50')).map(p => ({ id: p.id, name: p.name, snapshot_id: p.snapshot_id }));
+  const playlists = (await getAll('/me/playlists?limit=50')).filter(Boolean).map(p => ({ id: p.id, name: p.name, snapshot_id: p.snapshot_id,
+    owner: p.owner?.id, collab: !!p.collaborative, total: (p.items || p.tracks)?.total ?? null }));
   store.set('pl_list_v1', JSON.stringify(playlists));
   plMap = new Map(playlists.map(p => [p.id, p]));
   const saved = store.get('playlist_id');
@@ -961,6 +970,21 @@ function openSettings() {
   const inner = $('sheetInner'); inner.innerHTML = ''; inner.scrollTop = 0;
   $('bgart').style.backgroundImage = 'none';
   const box = el('div', 'settings');
+  // Inventering inför "Hela biblioteket"
+  box.appendChild(el('h3', null, 'Bibliotek'));
+  const inv = el('p', null, 'Räknar…'); box.appendChild(inv);
+  (async () => {
+    try {
+      const me = await api('/me');
+      const all = [...plMap.values()];
+      const readable = all.filter(p => p.owner === me.id || p.collab);
+      const sum = l => l.reduce((n, p) => n + (p.total || 0), 0);
+      const unknown = readable.some(p => p.total == null);
+      inv.textContent = `${all.length} spellistor totalt. ${readable.length} är dina egna eller samarbeten och går att läsa in, `
+        + `med sammanlagt ${unknown ? 'okänt antal' : sum(readable).toLocaleString('sv')} låtar. `
+        + `${all.length - readable.length} är andras listor som du följer, och dem lämnar Spotify inte ut.`;
+    } catch (e) { inv.textContent = 'Kunde inte räkna: ' + e.message; }
+  })();
   box.appendChild(el('h3', null, 'Genrer'));
   const n = Object.keys(exportGenres()).length;
   box.appendChild(el('p', null, `Du har satt egna genrer på ${n} album. De sparas i den här webbläsaren. För att de ska finnas på alla enheter (och inte försvinna), exportera och lägg filen som genres.json i repot.`));
