@@ -310,7 +310,16 @@
     .side .sh { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #8b8d99; padding: 16px 10px 6px;
       background: transparent; border: none; text-align: left; border-radius: 0; }
     .side .sh.link:hover { color: var(--text); }
-    .side .sidefoot { margin-top: auto; padding-top: 12px; }
+    .side .sidefoot { margin-top: auto; padding-top: 10px; position: sticky; bottom: -16px; padding-bottom: 16px; margin-bottom: -16px;
+      background: linear-gradient(to bottom, rgba(27,28,34,0), #1b1c22 14px); }
+    .side .shrow { display: flex; align-items: center; }
+    .side .shrow .sh { flex: 1; }
+    .side .shtog { background: transparent; border: none; width: 30px; height: 26px; padding: 0; margin-top: 10px; color: #8b8d99; display: grid; place-items: center; border-radius: 8px; }
+    .side .shtog:hover { background: rgba(255,255,255,.06); color: var(--text); }
+    .side .shtog svg { width: 16px; height: 16px; transition: transform .2s; }
+    .side .shtog.closed svg { transform: rotate(-90deg); }
+    .side .collapsed { display: none; }
+    #sidePlBox input { width: calc(100% - 4px); }
     main { margin-left: 264px; padding: 0 32px 140px; }
     .vhead { padding-top: 26px; }
     .back { display: none; }
@@ -336,11 +345,13 @@
   <input type="search" id="sideSearch" placeholder="Sök artist, album, låt…" aria-label="Sök">
   <div class="sh">Bibliotek</div>
   <div id="sideLib"></div>
-  <button class="sh link" id="sideGenHead">Genrer</button>
+  <div class="shrow"><button class="sh link" id="sideGenHead">Genrer</button><button class="shtog" id="togGen" aria-label="Fäll ihop genrer"></button></div>
   <div id="sideGen"></div>
-  <div class="sh">Spellistor</div>
-  <input type="search" id="sidePlSearch" placeholder="Sök spellista" aria-label="Sök spellista">
-  <div id="sidePl"></div>
+  <div class="shrow"><button class="sh link" id="sidePlHead">Spellistor</button><button class="shtog" id="togPl" aria-label="Fäll ihop spellistor"></button></div>
+  <div id="sidePlBox">
+    <input type="search" id="sidePlSearch" placeholder="Sök spellista" aria-label="Sök spellista">
+    <div id="sidePl"></div>
+  </div>
   <div class="sidefoot"><button class="srow" id="sideSettings"></button></div>
 </aside>
 <main id="main"><div class="center">Laddar…</div></main>
@@ -399,7 +410,7 @@
 <script src="config.js"></script>
 <script>
 // ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
-const BUILD = '20261116-1359';
+const BUILD = '20261116-1411';
 (async () => {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
@@ -869,6 +880,8 @@ const plName = () => plMap.get(curId)?.name || 'Spellista';
 
 // --- Sidomeny (dator)
 let plKey = '';
+let sideClosed = {}; try { sideClosed = JSON.parse(store.get('side_closed') || '{}'); } catch {}
+function toggleSide(k) { sideClosed[k] = !sideClosed[k]; store.set('side_closed', JSON.stringify(sideClosed)); renderSide(); }
 function renderSide() {
   const lib = $('sideLib'); lib.innerHTML = '';
   const row = (ic, label, count, on, onClick, cls = 'srow') => {
@@ -887,6 +900,12 @@ function renderSide() {
   });
   if (noneA + noneT) gen.appendChild(row('tag', 'Utan egen genre', noneA + noneT, route.view === 'genre' && route.genre === NONE, () => navigate({ view: 'genre', genre: NONE })));
   $('sideGenHead').onclick = () => navigate({ view: 'genres' });
+  $('sidePlHead').onclick = () => toggleSide('pl');
+  [['gen', 'togGen', 'sideGen'], ['pl', 'togPl', 'sidePlBox']].forEach(([k, b, box]) => {
+    const closed = !!sideClosed[k];
+    $(b).innerHTML = icon('down', ''); $(b).classList.toggle('closed', closed); $(b).onclick = () => toggleSide(k);
+    $(box).classList.toggle('collapsed', closed);
+  });
   $('sideSettings').innerHTML = icon('gear') + '<span class="lbl">Inställningar</span>';
   const key = curId + '|' + plMap.size + '|' + plQuery;
   if (key !== plKey) { plKey = key; renderPlaylistList($('sidePl'), plQuery, 'srow'); }
