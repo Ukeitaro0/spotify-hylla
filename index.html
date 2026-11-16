@@ -449,7 +449,7 @@
 <script src="config.js"></script>
 <script>
 // ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
-const BUILD = '20261116-1430';
+const BUILD = '20261116-1435';
 (async () => {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
@@ -1009,7 +1009,7 @@ function renderSide() {
     const b = btn(cls + (on ? ' on' : ''), (ic ? icon(ic) : '') + `<span class="lbl"></span><span class="c">${count ?? ''}</span>`, onClick);
     b.querySelector('.lbl').textContent = label; return b;
   };
-  [['album', 'Album', albums.length, 'albums'], ['artist', 'Artister', artistCount(), 'artists'], ['note', 'Alla låtar', tracks.length, 'tracks'], ['loose', 'Övriga låtar', loose.length, 'loose']]
+  [['album', 'Album', albums.length, 'albums'], ['artist', 'Artister', artistCount(), 'artists'], ['note', 'Låtar', tracks.length, 'tracks'], ['loose', 'Övriga låtar', loose.length, 'loose']]
     .forEach(([ic, l, c, v]) => lib.appendChild(row(ic, l, c.toLocaleString('sv'), route.view === v, () => navigate({ view: v }))));
   const gen = $('sideGen'); gen.innerHTML = '';
   const { list, noneA, noneT } = genreStats();
@@ -1106,7 +1106,7 @@ function renderMain() {
   if (!tracks.length) { vhead(main, { title: plName() }); main.appendChild(el('div', 'center', 'Spellistan är tom, eller går inte att läsa (Spotify lämnar bara ut innehåll i listor du äger eller samarbetar på).')); return; }
   if (v === 'genre') return viewGenre(main);
   if (v === 'artist') return viewArtist(main);
-  const titles = { albums: 'Album', artists: 'Artister', tracks: 'Alla låtar', loose: 'Övriga låtar' };
+  const titles = { albums: 'Album', artists: 'Artister', tracks: 'Låtar', loose: 'Övriga låtar' };
   vhead(main, { title: titles[v], sub: plName(), back: libBack(), actions: [v !== 'artists' ? sortSelect(v !== 'albums') : null] });
   if (v === 'albums') listAlbums(main);
   if (v === 'artists') listArtists(main);
@@ -1118,7 +1118,7 @@ function viewHome(main) {
   const pill = btn('plpill', `<span></span>${icon('down', 'ico')}`, () => navigate({ view: 'playlists' }));
   pill.querySelector('span').textContent = plName(); main.appendChild(pill);
   const rows = el('div', 'librows');
-  [['album', 'Album', albums.length, 'albums'], ['artist', 'Artister', artistCount(), 'artists'], ['note', 'Alla låtar', tracks.length, 'tracks'], ['loose', 'Övriga låtar', loose.length, 'loose']]
+  [['album', 'Album', albums.length, 'albums'], ['artist', 'Artister', artistCount(), 'artists'], ['note', 'Låtar', tracks.length, 'tracks'], ['loose', 'Övriga låtar', loose.length, 'loose']]
     .forEach(([ic, l, c, view]) => rows.appendChild(btn('librow', `${icon(ic)}<span class="lbl">${l}</span><span class="c">${c.toLocaleString('sv')}</span>${icon('right', 'ico')}`, () => navigate({ view }))));
   main.appendChild(rows);
   if (!tracks.length) return main.appendChild(el('div', 'center', 'Hämtar låtar…'));
@@ -1158,21 +1158,6 @@ function viewGenre(main) {
     add('Alla ' + g.toLowerCase(), !route.sub, { view: 'genre', genre: g });
     [...st.subs.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'sv')).forEach(([sg, n]) => add(sg, route.sub === sg, { view: 'genre', genre: g, sub: sg }, n));
     main.appendChild(chips);
-  }
-  // Artister i genren (och subgenren)
-  const inG = new Map();
-  const bump = (o, kind) => { const e = inG.get(o.id) || inG.set(o.id, { e: artistMap.get(o.id) || { id: o.id, name: o.name, cover: '' }, a: 0, s: 0 }).get(o.id); e[kind]++; };
-  albums.filter(a => matchesGenre(a.id)).forEach(a => bump(albumArtist(a), 'a'));
-  tracks.filter(x => matchesGenre(x.t.album.id)).forEach(x => { const o = ownerOf(x.t); if (looseUris.has(x.t.uri) || o.id !== albumArtist(x.t.album).id) bump(o, 's'); });
-  if (inG.size > 1 || route.artist) {
-    const row = el('div', 'arow');
-    const all = el('button', 'avatar' + (route.artist ? '' : ' on'));
-    all.appendChild(el('div', 'all', String(inG.size))); all.appendChild(el('div', 'n', 'Alla artister'));
-    all.onclick = () => { const r = { ...route }; delete r.artist; navigate(r, false); };
-    row.appendChild(all);
-    [...inG.values()].sort((x, y) => sortKey(x.e.name).localeCompare(sortKey(y.e.name), 'sv'))
-      .forEach(({ e }) => row.appendChild(avatarEl(e, { on: route.artist === e.id, onClick: () => navigate({ ...route, artist: route.artist === e.id ? undefined : e.id }, false) })));
-    main.appendChild(row);
   }
   const seg = el('div', 'seg small');
   [['albums', 'Album'], ['tracks', 'Låtar']].forEach(([m, l]) => {
