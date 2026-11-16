@@ -246,6 +246,10 @@
   .vhead.big h2 { font-size: 32px; }
   .vhead .sub { color: var(--muted); font-size: 13px; margin-top: 3px; }
   .vhead .acts { display: flex; gap: 8px; align-items: center; flex: none; }
+  .vhead.big .acts { align-self: flex-start; margin-top: 4px; }
+  main { min-height: 100vh; min-height: 100dvh; box-sizing: border-box; }
+  /* När tangentbordet är uppe på mobilen: göm det som ligger fast i botten, så inget hoppar */
+  @media (max-width: 899px) { body.typing .tabbar, body.typing .player, body.typing .selbar { display: none; } }
   .vhead .acts select { max-width: 190px; font-size: 14px; padding: 7px 30px 7px 12px; }
   .side input[type=search] { flex: none; }
   .back { display: flex; align-items: center; gap: 2px; background: transparent; border: none; color: var(--accent); padding: 0; font-size: 15px; margin-bottom: 6px; }
@@ -395,7 +399,7 @@
 <script src="config.js"></script>
 <script>
 // ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
-const BUILD = '20261116-1113';
+const BUILD = '20261116-1127';
 (async () => {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
@@ -795,7 +799,7 @@ const ICONS = {
   tag: '<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
   list: '<path d="M3 6h12M3 12h12M3 18h8M17 14v7l4-2"/>',
   search: '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
-  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  gear: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
   down: '<path d="M6 9l6 6 6-6"/>', left: '<path d="M15 6l-6 6 6 6"/>', right: '<path d="M9 6l6 6-6 6"/>', check: '<path d="M5 12l5 5 9-10"/>',
 };
 const icon = (name, cls = 'ico') => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
@@ -1025,9 +1029,8 @@ function viewSearch(main) {
   const res = el('div');
   if (!isDesk()) {
     const inp = el('input', 'searchbox'); inp.type = 'search'; inp.placeholder = 'Artist, album eller låt'; inp.value = query;
-    inp.style.background = $('sideSearch').style.background; inp.className = 'searchbox';
     inp.oninput = () => { query = inp.value; activeQuery = query; renderSearchResults(res); };
-    main.appendChild(inp); setTimeout(() => { if (!query) inp.focus(); }, 50);
+    main.appendChild(inp);
   }
   main.appendChild(res); renderSearchResults(res);
 }
@@ -1585,6 +1588,17 @@ $('sideSearch').oninput = () => {
 $('sidePlSearch').oninput = () => { plQuery = $('sidePlSearch').value; renderSide(); };
 $('sideSettings').onclick = openSettings;
 history.replaceState({ route, d: 0 }, '');
+// iOS: tangentbordet flyttar sidan. Göm bottenraderna medan man skriver och lägg tillbaka sidan efteråt.
+const isTextField = e => e.target.matches && e.target.matches('input:not([type=checkbox]), textarea');
+document.addEventListener('focusin', e => { if (isTextField(e)) document.body.classList.add('typing'); });
+document.addEventListener('focusout', e => {
+  if (!isTextField(e)) return;
+  setTimeout(() => {
+    if (document.activeElement && document.activeElement.matches && document.activeElement.matches('input, textarea')) return;
+    document.body.classList.remove('typing');
+    window.scrollTo(window.scrollX, window.scrollY);
+  }, 60);
+});
 
 (async () => {
   try {
