@@ -236,6 +236,89 @@
   .trk.playing .t { color: var(--accent); font-weight: 600; }
 
   .toast { z-index: 30 !important; }
+
+  /* ===== Navigering: flikar på mobil, sidomeny på dator ===== */
+  main { padding: 0 16px 120px; }
+  body.has-player main { padding-bottom: calc(190px + env(safe-area-inset-bottom)); }
+  .vhead { display: flex; align-items: flex-end; gap: 10px 12px; flex-wrap: wrap; padding: calc(16px + env(safe-area-inset-top)) 0 14px; }
+  .vhead .titles { flex: 1 1 180px; min-width: 0; }
+  .vhead h2 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.4px; overflow: hidden; text-overflow: ellipsis; }
+  .vhead.big h2 { font-size: 32px; }
+  .vhead .sub { color: var(--muted); font-size: 13px; margin-top: 3px; }
+  .vhead .acts { display: flex; gap: 8px; align-items: center; flex: none; }
+  .vhead .acts select { max-width: 190px; font-size: 14px; padding: 7px 30px 7px 12px; }
+  .side input[type=search] { flex: none; }
+  .back { display: flex; align-items: center; gap: 2px; background: transparent; border: none; color: var(--accent); padding: 0; font-size: 15px; margin-bottom: 6px; }
+  .back svg { width: 20px; height: 20px; }
+  .ico { width: 20px; height: 20px; flex: none; }
+  .plpill { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #c9cad3; background: var(--panel); padding: 7px 12px; margin: -4px 0 10px; max-width: 100%; }
+  .plpill span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .librows { margin-bottom: 22px; }
+  .librow { display: flex; align-items: center; gap: 14px; width: 100%; height: 54px; background: transparent; border: none; border-bottom: 1px solid var(--line);
+    border-radius: 0; padding: 0 2px; text-align: left; font-size: 17px; }
+  .librow .ico { color: var(--accent); width: 22px; height: 22px; }
+  .librow .lbl { flex: 1; }
+  .librow .c { font-size: 13px; color: var(--muted); }
+  .sect { font-size: 19px; font-weight: 700; margin: 26px 0 12px; }
+  .seg.small { margin: 0 0 14px; max-width: 260px; }
+  .gchips { display: flex; gap: 6px; overflow-x: auto; margin: 0 -16px 12px; padding: 0 16px 2px; scrollbar-width: none; }
+  .gchips::-webkit-scrollbar { display: none; }
+  .gtiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .gtile { height: 128px; border-radius: 18px; border: none; padding: 14px; text-align: left; display: flex; flex-direction: column; justify-content: space-between; color: #fff; }
+  .gtile .n { font-size: 19px; font-weight: 800; }
+  .gtile .m { font-size: 12px; font-weight: 600; opacity: .92; }
+  .gtile .x { font-size: 11px; opacity: .8; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .plsearch { width: 100%; margin-bottom: 10px; }
+  .plrow { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 50px; background: transparent; border: none; border-bottom: 1px solid var(--line); border-radius: 0; padding: 6px 2px; text-align: left; }
+  .plrow .lbl { flex: 1; min-width: 0; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .plrow .c { font-size: 12px; color: var(--muted); flex: none; }
+  .plrow.on .lbl { color: var(--accent); font-weight: 600; }
+  .searchbox { width: 100%; font-size: 16px; padding: 12px 16px 12px 40px; margin-bottom: 16px; }
+
+  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9; display: flex; padding: 6px 4px env(safe-area-inset-bottom);
+    background: rgba(22,23,28,.94); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid var(--line); }
+  .tabbar button { flex: 1; background: transparent; border: none; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font-size: 11px; font-weight: 600; color: var(--muted); padding: 4px 0 6px; }
+  .tabbar button svg { width: 24px; height: 24px; }
+  .tabbar button.on { color: var(--accent); }
+  .player { bottom: calc(70px + env(safe-area-inset-bottom)); }
+  .selbar { bottom: calc(70px + env(safe-area-inset-bottom)); }
+  body.has-player .selbar { bottom: calc(176px + env(safe-area-inset-bottom)); }
+  body.has-player .toast { bottom: calc(184px + env(safe-area-inset-bottom)); }
+  body.nologin .tabbar, body.nologin .side { display: none !important; }
+
+  .side { display: none; }
+  .srow { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 34px; padding: 6px 10px; border: none; border-radius: 9px; text-align: left;
+    font-size: 14px; color: #e6e7ec; background: transparent; }
+  .srow:hover { background: rgba(255,255,255,.05); }
+  .srow .ico { width: 17px; height: 17px; color: var(--muted); }
+  .srow .lbl { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .srow .c { font-size: 11px; color: #8b8d99; flex: none; }
+  .srow.on { background: rgba(30,215,96,.14); color: var(--accent); }
+  .srow.on .ico { color: var(--accent); }
+  .srow.sub { padding-left: 37px; font-size: 13px; min-height: 30px; }
+  @media (min-width: 900px) {
+    .tabbar { display: none; }
+    .side { display: flex; flex-direction: column; gap: 1px; position: fixed; top: 0; bottom: 0; left: 0; width: 264px; z-index: 6; overflow-y: auto;
+      padding: 20px 12px 16px; background: #1b1c22; border-right: 1px solid var(--line); overscroll-behavior: contain; }
+    .side .brand { font-size: 22px; font-weight: 800; padding: 0 10px 12px; letter-spacing: -.3px; }
+    .side input[type=search] { margin: 0 2px 6px; font-size: 13px; padding-top: 8px; padding-bottom: 8px; }
+    .side .sh { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #8b8d99; padding: 16px 10px 6px;
+      background: transparent; border: none; text-align: left; border-radius: 0; }
+    .side .sh.link:hover { color: var(--text); }
+    .side .sidefoot { margin-top: auto; padding-top: 12px; }
+    main { margin-left: 264px; padding: 0 32px 140px; }
+    .vhead { padding-top: 26px; }
+    .back { display: none; }
+    .player { left: calc(264px + (100vw - 264px) / 2); margin-left: -320px; right: auto; width: 640px; bottom: 16px; }
+    .selbar { left: calc(264px + (100vw - 264px) / 2); margin-left: -320px; right: auto; width: 640px; bottom: 16px; }
+    body.has-player .selbar { bottom: 120px; }
+    body.has-player .toast { bottom: 124px; }
+    body.has-player main { padding-bottom: 150px; }
+    .gtiles { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 26px 20px; }
+    .gchips { margin: 0 0 14px; padding: 0; flex-wrap: wrap; }
+  }
   .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 10px);
     background: rgba(50,52,62,.95); padding: 11px 18px; border-radius: var(--r-pill); font-size: 14px; z-index: 20;
     opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; max-width: 90vw; text-align: center; box-shadow: var(--shadow); }
@@ -244,36 +327,22 @@
 </head>
 <body>
 <div class="statusbg"></div>
-<header id="hdr" hidden>
-  <div class="row">
-    <h1>Hyllan</h1>
-    <select id="plSel" title="Spellista"></select>
-    <button id="reload" class="icon" title="Ladda om">⟳</button>
-    <button id="settingsBtn" class="icon" title="Inställningar">⚙︎</button>
-  </div>
-  <div class="row" style="margin-top:12px">
-    <input type="search" id="q" placeholder="Sök artist, album, låt…">
-    <select id="sort">
-      <option value="artist">Artist A–Ö</option>
-      <option value="playlist">Spellistans ordning</option>
-      <option value="date">Utgivning</option>
-      <option value="added">Senast tillagd</option>
-      <option value="name">Namn A–Ö</option>
-      <option value="genre">Genre</option>
-    </select>
-  </div>
-</header>
-<nav class="sticky" id="nav" hidden>
-  <div class="seg">
-    <button data-tab="albums" class="on">Album</button>
-    <button data-tab="artists">Artister</button>
-    <button data-tab="tracks">Alla låtar</button>
-    <button data-tab="loose">Övriga</button>
-  </div>
-  <div class="chips" id="chips"></div>
-  <div class="chips sub" id="chips2" hidden></div>
-</nav>
+<aside class="side" id="side">
+  <div class="brand">Hyllan</div>
+  <input type="search" id="sideSearch" placeholder="Sök artist, album, låt…" aria-label="Sök">
+  <div class="sh">Bibliotek</div>
+  <div id="sideLib"></div>
+  <button class="sh link" id="sideGenHead">Genrer</button>
+  <div id="sideGen"></div>
+  <div class="sh">Spellistor</div>
+  <input type="search" id="sidePlSearch" placeholder="Sök spellista" aria-label="Sök spellista">
+  <div id="sidePl"></div>
+  <div class="sidefoot"><button class="srow" id="sideSettings"></button></div>
+</aside>
 <main id="main"><div class="center">Laddar…</div></main>
+<nav class="tabbar" id="tabbar">
+  <button data-tab="lib"></button><button data-tab="genres"></button><button data-tab="playlists"></button><button data-tab="search"></button>
+</nav>
 <div class="sheet" id="sheet">
   <div class="panel" id="panel">
     <div class="bgart" id="bgart"></div>
@@ -326,7 +395,7 @@
 <script src="config.js"></script>
 <script>
 // ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
-const BUILD = '20261116-1048';
+const BUILD = '20261116-1113';
 (async () => {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
@@ -505,11 +574,7 @@ async function loadRepoGenres() {
 // Spellistor och låtar sparas lokalt, så sidan visas direkt och bara hämtar om något ändrats.
 function readCache() { try { return JSON.parse(store.get('pl_cache_v1') || 'null'); } catch { return null; } }
 function writeCache(c) { try { localStorage.setItem('pl_cache_v1', JSON.stringify(c)); } catch { store.del('pl_cache_v1'); } }
-function fillPlaylistSelect(list, pickId) {
-  const sel = $('plSel'); sel.innerHTML = '';
-  list.forEach(p => { const o = el('option', null, p.name); o.value = p.id; sel.appendChild(o); });
-  if (pickId) sel.value = pickId;
-}
+function fillPlaylistSelect(list, pickId) { renderSide(); }
 async function loadPlaylists() {
   const playlists = (await getAll('/me/playlists?limit=50')).filter(Boolean).map(p => ({ id: p.id, name: p.name, snapshot_id: p.snapshot_id,
     owner: p.owner?.id, collab: !!p.collaborative, total: (p.items || p.tracks)?.total ?? null }));
@@ -649,7 +714,7 @@ async function loadGenres() {
         failed++;
         if (e.code === 10 || e.code === 26) { toast('Last.fm-nyckeln fungerar inte', 4000); todo.length = 0; }
       }
-      if (++done % 15 === 0) { store.set('genres_v2', JSON.stringify(genreCache)); renderChips(); }
+      if (++done % 15 === 0) { store.set('genres_v2', JSON.stringify(genreCache)); renderSide(); }
     }
   };
   await Promise.all([worker(), worker(), worker()]);
@@ -658,8 +723,9 @@ async function loadGenres() {
 }
 
 // ===== Visning =====
+let activeQuery = '';
 function matchesSearch(...fields) {
-  const q = sortKey($('q').value.trim());
+  const q = sortKey(activeQuery.trim());
   return !q || fields.some(f => sortKey(f).includes(q));
 }
 function matchesGenre(albumId) {
@@ -669,45 +735,9 @@ function matchesGenre(albumId) {
   return i.main === mainFilter && (!subFilter || i.subs.includes(subFilter));
 }
 
-function currentPool() {
-  return tab === 'loose' ? loose.map(x => x.t.album.id) : tab === 'tracks' ? tracks.map(x => x.t.album.id) : albums.map(a => a.id);
-}
-
-function renderChips() {
-  const box = $('chips'), box2 = $('chips2'); box.innerHTML = ''; box2.innerHTML = '';
-  const pool = currentPool().map(infoFor);
-  const count = new Map();
-  pool.forEach(i => i.main && count.set(i.main, (count.get(i.main) || 0) + 1));
-  if (!count.size && !currentPool().length) { box.hidden = box2.hidden = true; return; }
-  box.hidden = false;
-  let list = [...count.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'sv'));
-  const more = list.length > GENRE_CHIPS_SHOWN && !showAllGenres;
-  if (more) list = list.slice(0, GENRE_CHIPS_SHOWN);
-  if (mainFilter && mainFilter !== NONE && !list.some(([g]) => g === mainFilter)) list.unshift([mainFilter, count.get(mainFilter) || 0]);
-  const add = (target, label, on, fn, c) => {
-    const b = el('button', 'chip' + (on ? ' on' : ''), label);
-    if (c != null) b.appendChild(el('span', 'c', String(c)));
-    b.onclick = fn; target.appendChild(b);
-  };
-  add(box, 'Alla genrer', !mainFilter, () => { mainFilter = subFilter = null; render(); });
-  list.forEach(([g, c]) => add(box, g, mainFilter === g, () => { mainFilter = mainFilter === g ? null : g; subFilter = null; render(); }, c));
-  if (more) add(box, 'Fler…', false, () => { showAllGenres = true; renderChips(); });
-  const untagged = currentPool().filter(id => !ownFor(id).main).length;
-  if (untagged) add(box, 'Utan egen genre', mainFilter === NONE, () => { mainFilter = mainFilter === NONE ? null : NONE; subFilter = null; render(); }, untagged);
-
-  // Rad 2: subgenrer inom vald huvudgenre
-  const subs = new Map();
-  if (mainFilter && mainFilter !== NONE) pool.filter(i => i.main === mainFilter).forEach(i => i.subs.forEach(g => subs.set(g, (subs.get(g) || 0) + 1)));
-  box2.hidden = !subs.size;
-  if (subs.size) {
-    add(box2, 'Alla ' + mainFilter.toLowerCase(), !subFilter, () => { subFilter = null; render(); });
-    [...subs.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'sv'))
-      .forEach(([g, c]) => add(box2, g, subFilter === g, () => { subFilter = subFilter === g ? null : g; render(); }, c));
-  }
-}
 
 function sortAlbums(list) {
-  const s = $('sort').value, c = (a, b) => a.localeCompare(b, 'sv');
+  const s = sortVal, c = (a, b) => a.localeCompare(b, 'sv');
   const firstGenre = a => infoFor(a.id).main || '~';
   return [...list].sort((a, b) =>
     s === 'date' ? (b.date || '').localeCompare(a.date || '') :
@@ -755,79 +785,333 @@ function trackRow(t, { num, onPlay, showCover = true, showGenre = false, menu = 
 
 function grid(list) { const g = el('div', 'grid'); list.forEach(a => g.appendChild(albumCard(a))); return g; }
 
+// ===== Navigering =====
+const ICONS = {
+  album: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>',
+  artist: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+  note: '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>',
+  loose: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  lib: '<path d="M4 4v16M9 4v16M14 4l5 16"/>',
+  tag: '<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+  list: '<path d="M3 6h12M3 12h12M3 18h8M17 14v7l4-2"/>',
+  search: '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  down: '<path d="M6 9l6 6 6-6"/>', left: '<path d="M15 6l-6 6 6 6"/>', right: '<path d="M9 6l6 6-6 6"/>', check: '<path d="M5 12l5 5 9-10"/>',
+};
+const icon = (name, cls = 'ico') => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
+function btn(cls, html, onClick, label) { const b = el('button', cls); b.innerHTML = html; if (onClick) b.onclick = onClick; if (label) b.setAttribute('aria-label', label); return b; }
+
+const deskMQ = window.matchMedia('(min-width: 900px)');
+const isDesk = () => deskMQ.matches;
+let route = { view: isDesk() ? 'albums' : 'home' };
+let sortVal = store.get('sort') || 'artist';
+let query = '', plQuery = '';
+let genreMode = store.get('genre_mode') || 'albums';
+const VIEW_TAB = { home: 'lib', albums: 'lib', artists: 'lib', tracks: 'lib', loose: 'lib', genres: 'genres', genre: 'genres', playlists: 'playlists', search: 'search' };
+const TAB_ROOT = { lib: { view: 'home' }, genres: { view: 'genres' }, playlists: { view: 'playlists' }, search: { view: 'search' } };
+const sameRoute = (a, b) => a.view === b.view && (a.genre || null) === (b.genre || null) && (a.sub || null) === (b.sub || null);
+
+function navigate(r, push = true) {
+  if (selecting) { selecting = false; selected.clear(); updateSelbar(); }
+  dupOnly = false;
+  if (push && !sameRoute(r, route)) {
+    const st = history.state || {};
+    history.replaceState({ ...st, route, y: window.scrollY }, '');
+    history.pushState({ route: r, d: (st.d || 0) + 1 }, '');
+  } else history.replaceState({ ...(history.state || {}), route: r }, '');
+  route = r; render(); window.scrollTo(0, 0);
+}
+function goBack(parent) { if ((history.state?.d || 0) > 0) history.back(); else navigate(parent, false); }
+deskMQ.addEventListener?.('change', () => { if (route.view === 'home' && isDesk()) route = { view: 'albums' }; render(); });
+
 function render() {
-  renderChips();
+  if (isDesk() && route.view === 'home') route = { view: 'albums' };
+  renderSide(); renderTabbar(); renderMain();
+}
+
+// --- Genrestatistik: huvudgenre -> antal album, lösa låtar, subgenrer
+function genreStats() {
+  const m = new Map(); let noneA = 0, noneT = 0;
+  const get = g => m.get(g) || m.set(g, { albums: 0, tracks: 0, subs: new Map() }).get(g);
+  const add = (id, key) => {
+    const i = infoFor(id);
+    if (!ownFor(id).main) key === 'albums' ? noneA++ : noneT++;
+    if (!i.main) return;
+    const s = get(i.main); s[key]++;
+    i.subs.forEach(x => s.subs.set(x, (s.subs.get(x) || 0) + 1));
+  };
+  albums.forEach(a => add(a.id, 'albums'));
+  loose.forEach(x => add(x.t.album.id, 'tracks'));
+  const list = [...m.entries()].sort((a, b) => (b[1].albums + b[1].tracks) - (a[1].albums + a[1].tracks) || a[0].localeCompare(b[0], 'sv'));
+  return { list, noneA, noneT };
+}
+const GENRE_COLORS = ['#c9875a', '#5f86c4', '#b5677f', '#5e9f6c', '#8c7bc4', '#b99a4a', '#4f9aa6', '#c46a5a', '#7b8794'];
+function genreColor(g) { let h = 0; for (const ch of g) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return GENRE_COLORS[h % GENRE_COLORS.length]; }
+const countText = (a, t) => [a ? `${a} album` : '', t ? `${t} ${t === 1 ? 'låt' : 'låtar'}` : ''].filter(Boolean).join(' · ') || 'tomt';
+const artistCount = () => new Set([...albums.map(a => primaryArtist(a.artists)), ...loose.map(x => primaryArtist(x.t.artists))]).size;
+const plName = () => plMap.get(curId)?.name || 'Spellista';
+
+// --- Sidomeny (dator)
+let plKey = '';
+function renderSide() {
+  const lib = $('sideLib'); lib.innerHTML = '';
+  const row = (ic, label, count, on, onClick, cls = 'srow') => {
+    const b = btn(cls + (on ? ' on' : ''), (ic ? icon(ic) : '') + `<span class="lbl"></span><span class="c">${count ?? ''}</span>`, onClick);
+    b.querySelector('.lbl').textContent = label; return b;
+  };
+  [['album', 'Album', albums.length, 'albums'], ['artist', 'Artister', artistCount(), 'artists'], ['note', 'Alla låtar', tracks.length, 'tracks'], ['loose', 'Övriga låtar', loose.length, 'loose']]
+    .forEach(([ic, l, c, v]) => lib.appendChild(row(ic, l, c.toLocaleString('sv'), route.view === v, () => navigate({ view: v }))));
+  const gen = $('sideGen'); gen.innerHTML = '';
+  const { list, noneA, noneT } = genreStats();
+  list.forEach(([g, st]) => {
+    const on = route.view === 'genre' && route.genre === g;
+    gen.appendChild(row('tag', g, st.albums + st.tracks, on && !route.sub, () => navigate({ view: 'genre', genre: g })));
+    if (on) [...st.subs.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'sv'))
+      .forEach(([sg, n]) => gen.appendChild(row(null, sg, n, route.sub === sg, () => navigate({ view: 'genre', genre: g, sub: sg }), 'srow sub')));
+  });
+  if (noneA + noneT) gen.appendChild(row('tag', 'Utan egen genre', noneA + noneT, route.view === 'genre' && route.genre === NONE, () => navigate({ view: 'genre', genre: NONE })));
+  $('sideGenHead').onclick = () => navigate({ view: 'genres' });
+  $('sideSettings').innerHTML = icon('gear') + '<span class="lbl">Inställningar</span>';
+  const key = curId + '|' + plMap.size + '|' + plQuery;
+  if (key !== plKey) { plKey = key; renderPlaylistList($('sidePl'), plQuery, 'srow'); }
+  else $('sidePl').querySelectorAll('[data-id]').forEach(b => b.classList.toggle('on', b.dataset.id === curId));
+  $('sidePlSearch').placeholder = `Sök bland ${plMap.size || ''} listor`;
+}
+function renderPlaylistList(box, q, cls) {
+  box.innerHTML = '';
+  const k = sortKey(q.trim());
+  const list = [...plMap.values()].filter(p => !k || sortKey(p.name).includes(k));
+  list.forEach(p => {
+    const on = p.id === curId;
+    const b = btn(cls + (on ? ' on' : ''), (cls === 'srow' ? icon('list') : '') + `<span class="lbl"></span><span class="c">${p.total != null ? p.total : ''}</span>`, () => pickPlaylist(p.id));
+    b.dataset.id = p.id; b.querySelector('.lbl').textContent = p.name; box.appendChild(b);
+  });
+  if (!list.length) box.appendChild(el('div', 'center', 'Inga listor matchar.'));
+}
+async function pickPlaylist(id) {
+  if (id !== curId) {
+    navigate(isDesk() ? { view: 'albums' } : { view: 'home' });
+    try { await loadPlaylist(id); } catch (e) { toast(e.message, 4000); }
+  } else navigate(isDesk() ? { view: 'albums' } : { view: 'home' });
+}
+
+// --- Flikar (mobil)
+const TABS = { lib: ['lib', 'Bibliotek'], genres: ['tag', 'Genrer'], playlists: ['list', 'Spellistor'], search: ['search', 'Sök'] };
+function renderTabbar() {
+  const cur = VIEW_TAB[route.view];
+  $('tabbar').querySelectorAll('button').forEach(b => {
+    const [ic, l] = TABS[b.dataset.tab];
+    if (!b.innerHTML) b.innerHTML = icon(ic, '') + `<span>${l}</span>`;
+    b.classList.toggle('on', b.dataset.tab === cur);
+    b.onclick = () => { if (b.dataset.tab === cur && sameRoute(route, TAB_ROOT[cur])) window.scrollTo({ top: 0, behavior: 'smooth' }); else navigate(TAB_ROOT[b.dataset.tab]); };
+  });
+}
+
+// --- Rubrik för en vy
+function vhead(main, { title, sub, back, actions = [], big = false }) {
+  const h = el('div', 'vhead' + (big ? ' big' : ''));
+  const t = el('div', 'titles');
+  if (back) t.appendChild(btn('back', icon('left', '') + `<span>${back.label}</span>`, () => goBack(back.route)));
+  t.appendChild(el('h2', null, title));
+  if (sub) t.appendChild(el('div', 'sub', sub));
+  h.appendChild(t);
+  if (actions.length) { const a = el('div', 'acts'); actions.forEach(x => x && a.appendChild(x)); h.appendChild(a); }
+  main.appendChild(h);
+}
+function sortSelect(forTracks) {
+  const opts = [['artist', 'Artist A–Ö'], ['playlist', 'Spellistans ordning'], ['date', 'Utgivning'], ['added', 'Senast tillagd'], ['name', forTracks ? 'Låttitel A–Ö' : 'Album A–Ö'], ['genre', 'Genre']];
+  const s = el('select'); s.setAttribute('aria-label', 'Sortering');
+  opts.forEach(([v, l]) => { const o = el('option', null, l); o.value = v; s.appendChild(o); });
+  s.value = sortVal; s.onchange = () => { sortVal = s.value; store.set('sort', sortVal); renderMain(); };
+  return s;
+}
+const gearBtn = () => btn('icon', icon('gear'), openSettings, 'Inställningar');
+const libBack = () => isDesk() ? null : { label: 'Bibliotek', route: { view: 'home' } };
+
+// --- Huvudytan
+function renderMain() {
   const main = $('main'); main.innerHTML = '';
-  if (!tracks.length) { main.innerHTML = '<div class="center">Spellistan är tom, eller går inte att läsa (Spotify lämnar bara ut innehåll i listor du äger eller samarbetar på).</div>'; return; }
-
   main.classList.toggle('selecting', selecting);
-  if (tab === 'albums') {
-    const list = sortAlbums(albums.filter(a => matchesSearch(a.name, a.artist) && matchesGenre(a.id)));
-    main.appendChild(toolbar(list.length + ' album', list.map(a => a.id)));
-    if (!list.length) return main.appendChild(el('div', 'center', 'Inga album matchar.'));
-    if ($('sort').value === 'genre') {
-      const groups = new Map();
-      list.forEach(a => { const g = infoFor(a.id).main || 'Ingen genre angiven'; (groups.get(g) || groups.set(g, []).get(g)).push(a); });
-      groups.forEach((l, g) => { const h = el('div', 'artist-h'); h.appendChild(el('div', 'n', g));
-        const subs = [...new Set(l.flatMap(a => infoFor(a.id).subs))]; if (subs.length) h.appendChild(el('div', 'g', subs.join(' · '))); main.appendChild(h); main.appendChild(grid(l)); });
-    } else main.appendChild(grid(list));
-  }
+  const v = route.view;
+  activeQuery = v === 'search' ? query : '';
+  mainFilter = v === 'genre' ? route.genre : null;
+  subFilter = v === 'genre' ? (route.sub || null) : null;
+  tab = v === 'genre' ? (genreMode === 'albums' ? 'albums' : 'tracks') : v;
+  if (v === 'home') return viewHome(main);
+  if (v === 'genres') return viewGenres(main);
+  if (v === 'playlists') return viewPlaylists(main);
+  if (v === 'search') return viewSearch(main);
+  if (!tracks.length) { vhead(main, { title: plName() }); main.appendChild(el('div', 'center', 'Spellistan är tom, eller går inte att läsa (Spotify lämnar bara ut innehåll i listor du äger eller samarbetar på).')); return; }
+  if (v === 'genre') return viewGenre(main);
+  const titles = { albums: 'Album', artists: 'Artister', tracks: 'Alla låtar', loose: 'Övriga låtar' };
+  vhead(main, { title: titles[v], sub: plName(), back: libBack(), actions: [v !== 'artists' ? sortSelect(v !== 'albums') : null] });
+  if (v === 'albums') listAlbums(main);
+  if (v === 'artists') listArtists(main);
+  if (v === 'tracks' || v === 'loose') listTracks(main, v === 'loose');
+}
 
-  if (tab === 'artists') {
-    const groups = new Map();
-    const g = n => groups.get(n) || groups.set(n, { albums: [], loose: [] }).get(n);
-    albums.filter(a => matchesSearch(a.name, a.artist) && matchesGenre(a.id)).forEach(a => g(primaryArtist(a.artists)).albums.push(a));
-    loose.filter(x => matchesSearch(x.t.name, artistNames(x.t.artists), x.t.album.name) && matchesGenre(x.t.album.id))
-      .forEach(x => g(primaryArtist(x.t.artists)).loose.push(x));
-    const names = [...groups.keys()].sort((a, b) => sortKey(a).localeCompare(sortKey(b), 'sv'));
-    if (!names.length) return main.appendChild(el('div', 'center', 'Inga träffar.'));
-    names.forEach(n => {
-      const grp = groups.get(n);
-      const list = grp.albums.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-      const h = el('div', 'artist-h');
-      h.appendChild(el('div', 'n', n));
-      const gs = [...new Set([...list.map(a => a.id), ...grp.loose.map(x => x.t.album.id)].flatMap(genresFor))].slice(0, 4);
-      if (gs.length) h.appendChild(el('div', 'g', gs.join(' · ')));
-      main.appendChild(h);
-      if (list.length) main.appendChild(grid(list));
-      if (grp.loose.length) {
-        if (list.length) main.appendChild(el('div', 'loose-h', 'Lösa låtar'));
-        const ls = grp.loose.sort((a, b) => (b.t.album.release_date || '').localeCompare(a.t.album.release_date || ''));
-        const uris = ls.map(x => x.t.uri), l = el('div', 'list');
-        ls.forEach((x, i) => l.appendChild(trackRow(x.t, { menu: true, onPlay: () => play({ uris, offset: { position: i } }, x.t.uri) })));
-        main.appendChild(l);
-      }
-    });
-  }
+function viewHome(main) {
+  vhead(main, { title: 'Bibliotek', big: true, actions: [gearBtn()] });
+  const pill = btn('plpill', `<span></span>${icon('down', 'ico')}`, () => navigate({ view: 'playlists' }));
+  pill.querySelector('span').textContent = plName(); main.appendChild(pill);
+  const rows = el('div', 'librows');
+  [['album', 'Album', albums.length, 'albums'], ['artist', 'Artister', artistCount(), 'artists'], ['note', 'Alla låtar', tracks.length, 'tracks'], ['loose', 'Övriga låtar', loose.length, 'loose']]
+    .forEach(([ic, l, c, view]) => rows.appendChild(btn('librow', `${icon(ic)}<span class="lbl">${l}</span><span class="c">${c.toLocaleString('sv')}</span>${icon('right', 'ico')}`, () => navigate({ view }))));
+  main.appendChild(rows);
+  if (!tracks.length) return main.appendChild(el('div', 'center', 'Hämtar låtar…'));
+  const recent = [...albums].sort((a, b) => (b.added || '').localeCompare(a.added || '')).slice(0, 6);
+  if (recent.length) { main.appendChild(el('div', 'sect', 'Senast tillagt')); main.appendChild(grid(recent)); }
+}
 
-  if (tab === 'loose' || tab === 'tracks') {
-    const s = $('sort').value, isLoose = tab === 'loose';
-    const source = isLoose ? loose : tracks;
-    const byArtist = (a, b) => sortKey(artistNames(a.t.artists)).localeCompare(sortKey(artistNames(b.t.artists)), 'sv')
-      || sortKey(a.t.album.name).localeCompare(sortKey(b.t.album.name), 'sv') || (a.t.disc_number - b.t.disc_number) || (a.t.track_number - b.t.track_number);
-    const list = source.filter(x => matchesSearch(x.t.name, artistNames(x.t.artists), x.t.album.name) && matchesGenre(x.t.album.id) && (!isLoose || !dupOnly || isDup(x.t))).sort((a, b) =>
-      s === 'added' ? (b.added || '').localeCompare(a.added || '') :
-      s === 'date' ? (b.t.album.release_date || '').localeCompare(a.t.album.release_date || '') || byArtist(a, b) :
-      s === 'name' ? sortKey(a.t.name).localeCompare(sortKey(b.t.name), 'sv') :
-      s === 'playlist' ? (plIndex.get(a.t.uri) ?? 0) - (plIndex.get(b.t.uri) ?? 0) :
-      s === 'genre' ? (infoFor(a.t.album.id).main || '~').localeCompare(infoFor(b.t.album.id).main || '~', 'sv') || byArtist(a, b) :
-      byArtist(a, b));
-    const uris = list.map(x => x.t.uri);
-    const playBtn = el('button', 'primary', '▶  Spela alla');
-    playBtn.onclick = () => play({ uris: uris.slice(0, 500) });
-    main.appendChild(toolbar(list.length + ' låtar', uris, list.length && !selecting ? playBtn : null));
-    const nDup = loose.filter(x => isDup(x.t)).length;
-    if (isLoose && (nDup || dupOnly)) {
-      const db = el('button', 'chip warn' + (dupOnly ? ' on' : ''), (dupOnly ? '✓ ' : '') + 'Dubbletter som finns på album');
-      db.appendChild(el('span', 'c', String(nDup))); db.style.marginBottom = '12px';
-      db.onclick = () => { dupOnly = !dupOnly; render(); };
-      main.appendChild(db);
+function viewGenres(main) {
+  vhead(main, { title: 'Genrer', big: true, sub: plName(), actions: [isDesk() ? null : gearBtn()] });
+  const { list, noneA, noneT } = genreStats();
+  const box = el('div', 'gtiles');
+  const tile = (g, color, a, t, subs, r) => {
+    const b = btn('gtile', '<div class="n"></div><div><div class="m"></div><div class="x"></div></div>', () => navigate(r));
+    b.style.background = color;
+    b.querySelector('.n').textContent = g; b.querySelector('.m').textContent = countText(a, t); b.querySelector('.x').textContent = subs;
+    box.appendChild(b);
+  };
+  list.forEach(([g, st]) => tile(g, genreColor(g), st.albums, st.tracks,
+    [...st.subs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]).join(' · '), { view: 'genre', genre: g }));
+  if (noneA + noneT) tile('Utan egen genre', '#3a3c47', noneA, noneT, 'Sätt genre på dem', { view: 'genre', genre: NONE });
+  if (!list.length && !(noneA + noneT)) main.appendChild(el('div', 'center', 'Inga genrer än.'));
+  main.appendChild(box);
+}
+
+function viewGenre(main) {
+  const g = route.genre, none = g === NONE;
+  const st = genreStats().list.find(([n]) => n === g)?.[1];
+  vhead(main, { title: none ? 'Utan egen genre' : g, sub: (route.sub ? route.sub + ' · ' : '') + plName(),
+    back: isDesk() ? null : { label: 'Genrer', route: { view: 'genres' } }, actions: [sortSelect(genreMode !== 'albums')] });
+  if (st && st.subs.size) {
+    const chips = el('div', 'gchips');
+    const add = (label, on, r, c) => { const b = el('button', 'chip' + (on ? ' on' : ''), label); if (c != null) b.appendChild(el('span', 'c', String(c))); b.onclick = () => navigate(r, false); chips.appendChild(b); };
+    add('Alla ' + g.toLowerCase(), !route.sub, { view: 'genre', genre: g });
+    [...st.subs.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'sv')).forEach(([sg, n]) => add(sg, route.sub === sg, { view: 'genre', genre: g, sub: sg }, n));
+    main.appendChild(chips);
+  }
+  const seg = el('div', 'seg small');
+  [['albums', 'Album'], ['tracks', 'Låtar']].forEach(([m, l]) => {
+    const b = el('button', genreMode === m ? 'on' : '', l);
+    b.onclick = () => { genreMode = m; store.set('genre_mode', m); if (selecting) exitSelect(); else renderMain(); };
+    seg.appendChild(b);
+  });
+  main.appendChild(seg);
+  if (genreMode === 'albums') {
+    listAlbums(main);
+    const ls = loose.filter(x => matchesGenre(x.t.album.id));
+    if (ls.length) {
+      main.appendChild(el('div', 'sect', 'Lösa låtar'));
+      const uris = ls.map(x => x.t.uri), l = el('div', 'list');
+      ls.forEach((x, i) => l.appendChild(trackRow(x.t, { menu: true, onPlay: () => play({ uris, offset: { position: i } }, x.t.uri) })));
+      main.appendChild(l);
     }
-    if (!list.length) return main.appendChild(el('div', 'center', isLoose ? 'Inga lösa låtar matchar.' : 'Inga låtar matchar.'));
-    const l = el('div', 'list');
-    list.forEach((x, i) => l.appendChild(trackRow(x.t, { showGenre: true, menu: true, onPlay: () => play({ uris: uris.slice(0, 500), offset: { position: Math.min(i, 499) } }, x.t.uri) })));
-    main.appendChild(l);
+  } else listTracks(main, false);
+}
+
+function viewPlaylists(main) {
+  vhead(main, { title: 'Spellistor', big: true, sub: `${plMap.size} listor`, actions: [isDesk() ? null : gearBtn()] });
+  const inp = el('input', 'plsearch'); inp.type = 'search'; inp.placeholder = 'Sök spellista'; inp.value = plQuery;
+  const box = el('div');
+  inp.oninput = () => { plQuery = inp.value; renderPlaylistList(box, plQuery, 'plrow'); };
+  main.appendChild(inp); main.appendChild(box);
+  renderPlaylistList(box, plQuery, 'plrow');
+}
+
+function viewSearch(main) {
+  vhead(main, { title: 'Sök', big: true, sub: plName() });
+  const res = el('div');
+  if (!isDesk()) {
+    const inp = el('input', 'searchbox'); inp.type = 'search'; inp.placeholder = 'Artist, album eller låt'; inp.value = query;
+    inp.style.background = $('sideSearch').style.background; inp.className = 'searchbox';
+    inp.oninput = () => { query = inp.value; activeQuery = query; renderSearchResults(res); };
+    main.appendChild(inp); setTimeout(() => { if (!query) inp.focus(); }, 50);
   }
+  main.appendChild(res); renderSearchResults(res);
+}
+function renderSearchResults(res) {
+  res.innerHTML = '';
+  if (!query.trim()) { res.appendChild(el('div', 'center', 'Skriv för att söka i ' + plName() + '.')); return; }
+  const al = sortAlbums(albums.filter(a => matchesSearch(a.name, a.artist))).slice(0, 12);
+  const tr = tracks.filter(x => matchesSearch(x.t.name, artistNames(x.t.artists), x.t.album.name)).slice(0, 100);
+  if (al.length) { res.appendChild(el('div', 'sect', 'Album')); res.appendChild(grid(al)); }
+  if (tr.length) {
+    res.appendChild(el('div', 'sect', 'Låtar'));
+    const uris = tr.map(x => x.t.uri), l = el('div', 'list');
+    tr.forEach((x, i) => l.appendChild(trackRow(x.t, { menu: true, onPlay: () => play({ uris, offset: { position: i } }, x.t.uri) })));
+    res.appendChild(l);
+  }
+  if (!al.length && !tr.length) res.appendChild(el('div', 'center', 'Inga träffar.'));
+}
+
+// --- Listor (används av både biblioteket och genrevyn)
+function listAlbums(main) {
+  const list = sortAlbums(albums.filter(a => matchesGenre(a.id)));
+  main.appendChild(toolbar(list.length + ' album', list.map(a => a.id)));
+  if (!list.length) return main.appendChild(el('div', 'center', 'Inga album här.'));
+  if (sortVal === 'genre' && route.view !== 'genre') {
+    const groups = new Map();
+    list.forEach(a => { const g = infoFor(a.id).main || 'Ingen genre angiven'; (groups.get(g) || groups.set(g, []).get(g)).push(a); });
+    groups.forEach((l, g) => { const h = el('div', 'artist-h'); h.appendChild(el('div', 'n', g));
+      const subs = [...new Set(l.flatMap(a => infoFor(a.id).subs))]; if (subs.length) h.appendChild(el('div', 'g', subs.join(' · '))); main.appendChild(h); main.appendChild(grid(l)); });
+  } else main.appendChild(grid(list));
+}
+
+function listArtists(main) {
+  const groups = new Map();
+  const g = n => groups.get(n) || groups.set(n, { albums: [], loose: [] }).get(n);
+  albums.forEach(a => g(primaryArtist(a.artists)).albums.push(a));
+  loose.forEach(x => g(primaryArtist(x.t.artists)).loose.push(x));
+  const names = [...groups.keys()].sort((a, b) => sortKey(a).localeCompare(sortKey(b), 'sv'));
+  if (!names.length) return main.appendChild(el('div', 'center', 'Inga artister.'));
+  names.forEach(n => {
+    const grp = groups.get(n);
+    const list = grp.albums.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const h = el('div', 'artist-h');
+    h.appendChild(el('div', 'n', n));
+    const gs = [...new Set([...list.map(a => a.id), ...grp.loose.map(x => x.t.album.id)].flatMap(genresFor))].slice(0, 4);
+    if (gs.length) h.appendChild(el('div', 'g', gs.join(' · ')));
+    main.appendChild(h);
+    if (list.length) main.appendChild(grid(list));
+    if (grp.loose.length) {
+      if (list.length) main.appendChild(el('div', 'loose-h', 'Lösa låtar'));
+      const ls = grp.loose.sort((a, b) => (b.t.album.release_date || '').localeCompare(a.t.album.release_date || ''));
+      const uris = ls.map(x => x.t.uri), l = el('div', 'list');
+      ls.forEach((x, i) => l.appendChild(trackRow(x.t, { menu: true, onPlay: () => play({ uris, offset: { position: i } }, x.t.uri) })));
+      main.appendChild(l);
+    }
+  });
+}
+
+function listTracks(main, isLoose) {
+  const s = sortVal;
+  const source = isLoose ? loose : tracks;
+  const byArtist = (a, b) => sortKey(artistNames(a.t.artists)).localeCompare(sortKey(artistNames(b.t.artists)), 'sv')
+    || sortKey(a.t.album.name).localeCompare(sortKey(b.t.album.name), 'sv') || (a.t.disc_number - b.t.disc_number) || (a.t.track_number - b.t.track_number);
+  const list = source.filter(x => matchesGenre(x.t.album.id) && (!isLoose || !dupOnly || isDup(x.t))).sort((a, b) =>
+    s === 'added' ? (b.added || '').localeCompare(a.added || '') :
+    s === 'date' ? (b.t.album.release_date || '').localeCompare(a.t.album.release_date || '') || byArtist(a, b) :
+    s === 'name' ? sortKey(a.t.name).localeCompare(sortKey(b.t.name), 'sv') :
+    s === 'playlist' ? (plIndex.get(a.t.uri) ?? 0) - (plIndex.get(b.t.uri) ?? 0) :
+    s === 'genre' ? (infoFor(a.t.album.id).main || '~').localeCompare(infoFor(b.t.album.id).main || '~', 'sv') || byArtist(a, b) :
+    byArtist(a, b));
+  const uris = list.map(x => x.t.uri);
+  const playBtn = el('button', 'primary', '▶  Spela alla');
+  playBtn.onclick = () => play({ uris: uris.slice(0, 500) });
+  main.appendChild(toolbar(list.length + ' låtar', uris, list.length && !selecting ? playBtn : null));
+  const nDup = loose.filter(x => isDup(x.t)).length;
+  if (isLoose && (nDup || dupOnly)) {
+    const db = el('button', 'chip warn' + (dupOnly ? ' on' : ''), (dupOnly ? '✓ ' : '') + 'Dubbletter som finns på album');
+    db.appendChild(el('span', 'c', String(nDup))); db.style.marginBottom = '12px';
+    db.onclick = () => { dupOnly = !dupOnly; renderMain(); };
+    main.appendChild(db);
+  }
+  if (!list.length) return main.appendChild(el('div', 'center', isLoose ? 'Inga lösa låtar här.' : 'Inga låtar här.'));
+  const l = el('div', 'list');
+  list.forEach((x, i) => l.appendChild(trackRow(x.t, { showGenre: true, menu: true, onPlay: () => play({ uris: uris.slice(0, 500), offset: { position: Math.min(i, 499) } }, x.t.uri) })));
+  main.appendChild(l);
 }
 
 // ===== Välj flera och sätt genre =====
@@ -1050,6 +1334,9 @@ function openSettings() {
   const inner = $('sheetInner'); inner.innerHTML = ''; inner.scrollTop = 0;
   $('bgart').style.backgroundImage = 'none';
   const box = el('div', 'settings');
+  const rl = el('button', null, '⟳  Hämta om spellistan nu'); rl.style.marginBottom = '8px';
+  rl.onclick = () => { closeSheet(); loadPlaylist(curId, true).catch(err => toast(err.message, 4000)); };
+  box.appendChild(rl);
   // Inventering inför "Hela biblioteket"
   box.appendChild(el('h3', null, 'Bibliotek'));
   const inv = el('p', null, 'Räknar…'); box.appendChild(inv);
@@ -1097,7 +1384,14 @@ function hideSheet() {
   render();
 }
 function closeSheet() { if (sheetOpen) history.back(); else hideSheet(); }
-window.addEventListener('popstate', () => { if (fullOpen) hideFull(); else if (sheetOpen) hideSheet(); });
+window.addEventListener('popstate', e => {
+  if (fullOpen) hideFull();
+  else if (sheetOpen) hideSheet();
+  else if (e.state && e.state.route) {
+    if (selecting) { selecting = false; selected.clear(); updateSelbar(); }
+    route = e.state.route; render(); window.scrollTo(0, e.state.y || 0);
+  }
+});
 $('close').onclick = closeSheet;
 $('sheet').onclick = e => { if (e.target.id === 'sheet') closeSheet(); };
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && sheetOpen) closeSheet(); });
@@ -1275,7 +1569,7 @@ async function play(body, fallbackUri) {
 
 // ===== Start =====
 function showLogin(msg) {
-  $('hdr').hidden = true; $('nav').hidden = true;
+  document.body.classList.add('nologin');
   const main = $('main'); main.innerHTML = '';
   const box = el('div', 'center');
   if (msg) { const p = el('p', null, msg); p.style.color = '#f88'; box.appendChild(p); }
@@ -1284,22 +1578,19 @@ function showLogin(msg) {
   main.appendChild(box);
 }
 
-document.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
-  document.querySelectorAll('.seg button').forEach(x => x.classList.toggle('on', x === b));
-  tab = b.dataset.tab; selecting = false; selected.clear(); updateSelbar(); render(); window.scrollTo(0, 0);
-});
-$('q').oninput = render;
-$('sort').onchange = () => { store.set('sort', $('sort').value); render(); };
-$('plSel').onchange = () => loadPlaylist($('plSel').value).catch(err => toast(err.message, 4000));
-$('settingsBtn').onclick = openSettings;
-$('reload').onclick = () => loadPlaylist($('plSel').value, true).catch(err => toast(err.message, 4000));
-if (store.get('sort')) $('sort').value = store.get('sort');
+$('sideSearch').oninput = () => {
+  query = $('sideSearch').value;
+  if (route.view !== 'search') navigate({ view: 'search' }); else { activeQuery = query; const r = $('main').lastElementChild; if (r) renderSearchResults(r); }
+};
+$('sidePlSearch').oninput = () => { plQuery = $('sidePlSearch').value; renderSide(); };
+$('sideSettings').onclick = openSettings;
+history.replaceState({ route, d: 0 }, '');
 
 (async () => {
   try {
     await handleRedirect();
     if (!store.get('access_token') && !store.get('refresh_token')) return showLogin();
-    $('hdr').hidden = false; $('nav').hidden = false;
+    document.body.classList.remove('nologin');
     // 1. Visa senast sparade direkt
     const c = readCache();
     let list = []; try { list = JSON.parse(store.get('pl_list_v1') || '[]'); } catch {}
