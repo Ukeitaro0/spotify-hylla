@@ -193,6 +193,7 @@
   .fullp .info { flex: none; }
   .fullp .ft { font-size: 23px; font-weight: 700; letter-spacing: -.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .fullp .fs { font-size: 16px; color: rgba(255,255,255,.72); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fullp .fs { cursor: pointer; }
   .fullp .fa { font-size: 13px; color: rgba(255,255,255,.5); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
   .fullp .fg { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; min-height: 0; }
   .fullp .fg span { font-size: 12px; padding: 3px 10px; border-radius: var(--r-pill); background: rgba(255,255,255,.1); color: rgba(255,255,255,.75); }
@@ -236,6 +237,44 @@
   .trk.playing .t { color: var(--accent); font-weight: 600; }
 
   .toast { z-index: 30 !important; }
+  /* Artister */
+  .avatar { display: flex; flex-direction: column; align-items: center; gap: 7px; background: transparent; border: none; padding: 0; width: 84px; flex: none; border-radius: 12px; }
+  .avatar img { width: 66px; height: 66px; border-radius: 50%; object-fit: cover; background: var(--panel2); box-shadow: 0 6px 16px rgba(0,0,0,.35); transition: box-shadow .15s; }
+  .avatar .n { font-size: 12px; line-height: 1.25; text-align: center; color: #e6e7ec; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .avatar .c { font-size: 11px; color: var(--muted); margin-top: -4px; }
+  .avatar.on img { box-shadow: 0 0 0 3px var(--accent); }
+  .avatar.on .n { color: var(--accent); font-weight: 700; }
+  .avatar .all { width: 66px; height: 66px; border-radius: 50%; background: var(--panel2); display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #c9cad3; }
+  .avatar.on .all { box-shadow: 0 0 0 3px var(--accent); color: var(--accent); }
+  .arow { display: flex; gap: 6px; overflow-x: auto; margin: 0 -16px 16px; padding: 4px 16px 2px; scrollbar-width: none; }
+  .arow::-webkit-scrollbar { display: none; }
+  .agrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 20px 8px; }
+  .agrid .avatar { width: auto; }
+  .agrid .avatar img { width: 92px; height: 92px; }
+  .ahero { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; padding: calc(16px + env(safe-area-inset-top)) 0 18px; }
+  .ahero img { width: 128px; height: 128px; border-radius: 50%; object-fit: cover; background: var(--panel2); box-shadow: 0 16px 40px rgba(0,0,0,.45); flex: none; }
+  .ahero .info { flex: 1 1 200px; min-width: 0; }
+  .ahero h2 { margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -.5px; }
+  .ahero .gp { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .ahero .gp span { font-size: 12px; padding: 4px 11px; border-radius: 999px; background: rgba(255,255,255,.08); color: #c9cad3; }
+  .ahero .gp span.main { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .ahero .meta { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .ahero .primary { margin-top: 12px; }
+  .crumbs { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 6px; }
+  .crumb { background: transparent; border: none; padding: 0; color: var(--accent); font-size: 15px; font-weight: 600; }
+  .crumbs .sep { color: #6c6e7a; font-size: 15px; }
+  .alink { background: transparent; border: none; padding: 0; color: inherit; font: inherit; text-decoration: underline; text-decoration-color: rgba(255,255,255,.25); text-underline-offset: 3px; }
+  .mact .chip { font-size: 13px; }
+  @media (min-width: 900px) {
+    .arow { margin: 0 0 18px; padding: 4px 0 2px; flex-wrap: wrap; overflow: visible; }
+    .avatar img, .avatar .all { width: 74px; height: 74px; }
+    .avatar { width: 92px; }
+    .agrid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 26px 12px; }
+    .agrid .avatar img { width: 120px; height: 120px; }
+    .ahero { padding-top: 28px; }
+    .ahero img { width: 150px; height: 150px; }
+    .ahero h2 { font-size: 40px; }
+  }
 
   /* ===== Navigering: flikar på mobil, sidomeny på dator ===== */
   main { padding: 0 16px 120px; }
@@ -410,7 +449,7 @@
 <script src="config.js"></script>
 <script>
 // ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
-const BUILD = '20261116-1411';
+const BUILD = '20261116-1420';
 (async () => {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
@@ -582,11 +621,21 @@ function setOwn(albumId, v, save = true) {
 function exportGenres() {
   const out = {};
   Object.keys(localGenres).forEach(id => { const o = norm(localGenres[id]); out[id] = { main: o.main, subs: o.subs, t: o.t || Date.now() }; });
+  Object.keys(localArtistPrefs).forEach(uri => { const p = localArtistPrefs[uri]; out['artist:' + uri] = { artist: p.id ? { id: p.id, name: p.name } : null, t: p.t || Date.now() }; });
   return out;
 }
 const sameGenre = (a, b) => a && b && a.main === b.main && JSON.stringify(a.subs) === JSON.stringify(b.subs);
 async function loadRepoGenres() {
   try { const r = await fetch('genres.json', { cache: 'no-store' }); if (r.ok) repoGenres = await r.json() || {}; } catch { return; }
+  repoArtistPrefs = {};
+  Object.keys(repoGenres).forEach(k => { if (k.startsWith('artist:')) { const v = repoGenres[k]; if (v.artist) repoArtistPrefs[k.slice(7)] = { ...v.artist, t: v.t || 0 }; delete repoGenres[k]; } });
+  let ch2 = false;
+  Object.keys(localArtistPrefs).forEach(uri => {
+    const l = localArtistPrefs[uri], r = repoArtistPrefs[uri];
+    if ((r && r.id === l.id) || (!r && !l.id) || (r && (r.t || 0) >= (l.t || 0))) { delete localArtistPrefs[uri]; ch2 = true; }
+  });
+  if (ch2) store.set('artist_prefs_v1', JSON.stringify(localArtistPrefs));
+  if (tracks.length) buildArtists();
   // Städa: lokala ändringar som redan finns i genres.json (eller där genres.json är nyare) behövs inte längre
   let changed = false;
   Object.keys(localGenres).forEach(id => {
@@ -667,12 +716,81 @@ function build(items) {
   albums.forEach(a => a.items.forEach(x => dupKeys.add(trackKey(x.t))));
   looseUris = new Set(loose.map(x => x.t.uri));
   plIndex = new Map(tracks.map((x, i) => [x.t.uri, i]));
+  buildArtists();
 }
 const normTitle = s => (s || '').toLowerCase().replace(/\s*[\(\[][^\)\]]*[\)\]]/g, '').replace(/\s+-\s+.*$/, '')
   .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 const trackKey = t => (t.artists?.[0]?.id || '') + '|' + normTitle(t.name);
 const isDup = t => looseUris.has(t.uri) && dupKeys.has(trackKey(t));
 const primaryArtist = list => list?.[0]?.name || 'Okänd artist';
+
+// ===== Artister =====
+// Manuellt val: en låt kan visas under en annan av sina artister (t.ex. en gästartist). Synkas som genrerna.
+let localArtistPrefs = {}, repoArtistPrefs = {};
+try { localArtistPrefs = JSON.parse(store.get('artist_prefs_v1') || '{}'); } catch {}
+const prefFor = uri => { const v = localArtistPrefs[uri] ?? repoArtistPrefs[uri]; return v && v.id ? v : null; };
+const asArtist = a => ({ id: a?.id || a?.name || '?', name: a?.name || 'Okänd artist' });
+const albumArtist = a => asArtist((a.artists || [])[0]);
+function ownerOf(t) {               // vem en låt "hör till" på hyllan
+  const p = prefFor(t.uri);
+  if (p && t.artists.some(a => a.id === p.id)) return { id: p.id, name: p.name };
+  return looseUris.has(t.uri) ? asArtist(t.artists[0]) : albumArtist(t.album);
+}
+function setArtistPref(uri, artist) {
+  localArtistPrefs[uri] = artist ? { id: artist.id, name: artist.name, t: Date.now() } : { id: null, t: Date.now() };
+  store.set('artist_prefs_v1', JSON.stringify(localArtistPrefs));
+  buildArtists();
+}
+let artistMap = new Map();
+function buildArtists() {
+  artistMap = new Map();
+  const g = o => artistMap.get(o.id) || artistMap.set(o.id, { id: o.id, name: o.name, albums: [], songs: [], feat: [], cover: '' }).get(o.id);
+  albums.forEach(a => { const e = g(albumArtist(a)); e.albums.push(a); e.cover = e.cover || a.img; });
+  tracks.forEach(x => {
+    const own = ownerOf(x.t), isLoose = looseUris.has(x.t.uri);
+    if (isLoose || own.id !== albumArtist(x.t.album).id) { const e = g(own); e.songs.push(x); e.cover = e.cover || bestImage(x.t.album.images, 300); }
+  });
+  tracks.forEach(x => {                // "Medverkar på": artister som redan finns på hyllan
+    const own = ownerOf(x.t);
+    x.t.artists.forEach(a => { if (!a.id || a.id === own.id) return; const e = artistMap.get(a.id); if (e && !e.feat.includes(x)) e.feat.push(x); });
+  });
+}
+const artistCountText = e => [e.albums.length ? `${e.albums.length} album` : '', e.songs.length ? `${e.songs.length} ${e.songs.length === 1 ? 'låt' : 'låtar'}` : ''].filter(Boolean).join(' · ');
+
+// Riktiga artistbilder: hämtas en i taget med paus, bara för artister som visas, och sparas i 60 dagar.
+let artistImg = {}; try { artistImg = JSON.parse(store.get('artist_img_v1') || '{}'); } catch {}
+const imgQueue = []; let imgBusy = false;
+function wantArtistImg(id) {
+  if (!/^[0-9A-Za-z]{22}$/.test(id || '')) return;
+  const c = artistImg[id]; if (c && Date.now() - c.ts < 60 * 864e5) return;
+  if (!imgQueue.includes(id)) imgQueue.push(id);
+  setTimeout(pumpImg, 300);
+}
+async function pumpImg() {
+  if (imgBusy) return; imgBusy = true;
+  try {
+    while (imgQueue.length) {
+      if (document.hidden || Number(store.get('blocked_until') || 0) > Date.now()) break;
+      const id = imgQueue.shift();
+      try { const a = await api('/artists/' + id); artistImg[id] = { u: bestImage(a.images, 300) || '', ts: Date.now() }; }
+      catch (e) { if (e.status === 429 || e.message === 'Inte inloggad') { imgQueue.length = 0; break; } artistImg[id] = { u: '', ts: Date.now() }; }
+      store.set('artist_img_v1', JSON.stringify(artistImg));
+      if (artistImg[id].u) document.querySelectorAll(`img[data-aid="${id}"]`).forEach(i => { i.src = artistImg[id].u; });
+      await new Promise(r => setTimeout(r, 700));
+    }
+  } finally { imgBusy = false; }
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && imgQueue.length) pumpImg(); });
+const artistImgUrl = e => artistImg[e.id]?.u || e.cover || '';
+function avatarEl(e, { on = false, count = '', onClick } = {}) {
+  const b = el('button', 'avatar' + (on ? ' on' : ''));
+  const img = el('img'); img.alt = ''; img.loading = 'lazy'; img.dataset.aid = e.id; img.src = artistImgUrl(e);
+  b.appendChild(img); b.appendChild(el('div', 'n', e.name)); if (count) b.appendChild(el('div', 'c', count));
+  b.onclick = onClick || (() => goArtist(e.id));
+  wantArtistImg(e.id);
+  return b;
+}
+function goArtist(id) { navigate({ view: 'artist', artist: id, tab: VIEW_TAB_OF(route) }); }
 
 async function loadPlaylist(id, force = false) {
   const snapshot = plMap.get(id)?.snapshot_id || null;
@@ -750,7 +868,9 @@ async function loadGenres() {
 }
 
 // ===== Visning =====
-let activeQuery = '';
+let activeQuery = '', artistFilter = null;
+const matchesArtistAlbum = a => !artistFilter || albumArtist(a).id === artistFilter;
+const matchesArtistTrack = t => !artistFilter || ownerOf(t).id === artistFilter;
 function matchesSearch(...fields) {
   const q = sortKey(activeQuery.trim());
   return !q || fields.some(f => sortKey(f).includes(q));
@@ -835,8 +955,9 @@ let sortVal = store.get('sort') || 'artist';
 let query = '', plQuery = '';
 let genreMode = store.get('genre_mode') || 'albums';
 const VIEW_TAB = { home: 'lib', albums: 'lib', artists: 'lib', tracks: 'lib', loose: 'lib', genres: 'genres', genre: 'genres', playlists: 'playlists', search: 'search' };
+const VIEW_TAB_OF = r => r.tab || VIEW_TAB[r.view] || 'lib';
 const TAB_ROOT = { lib: { view: 'home' }, genres: { view: 'genres' }, playlists: { view: 'playlists' }, search: { view: 'search' } };
-const sameRoute = (a, b) => a.view === b.view && (a.genre || null) === (b.genre || null) && (a.sub || null) === (b.sub || null);
+const sameRoute = (a, b) => a.view === b.view && (a.genre || null) === (b.genre || null) && (a.sub || null) === (b.sub || null) && (a.artist || null) === (b.artist || null);
 
 function navigate(r, push = true) {
   if (selecting) { selecting = false; selected.clear(); updateSelbar(); }
@@ -933,7 +1054,7 @@ async function pickPlaylist(id) {
 // --- Flikar (mobil)
 const TABS = { lib: ['lib', 'Bibliotek'], genres: ['tag', 'Genrer'], playlists: ['list', 'Spellistor'], search: ['search', 'Sök'] };
 function renderTabbar() {
-  const cur = VIEW_TAB[route.view];
+  const cur = VIEW_TAB_OF(route);
   $('tabbar').querySelectorAll('button').forEach(b => {
     const [ic, l] = TABS[b.dataset.tab];
     if (!b.innerHTML) b.innerHTML = icon(ic, '') + `<span>${l}</span>`;
@@ -943,10 +1064,15 @@ function renderTabbar() {
 }
 
 // --- Rubrik för en vy
-function vhead(main, { title, sub, back, actions = [], big = false }) {
+function vhead(main, { title, sub, back, actions = [], big = false, crumbs = [] }) {
   const h = el('div', 'vhead' + (big ? ' big' : ''));
   const t = el('div', 'titles');
   if (back) t.appendChild(btn('back', icon('left', '') + `<span>${back.label}</span>`, () => goBack(back.route)));
+  if (crumbs.length) {
+    const c = el('div', 'crumbs');
+    crumbs.forEach(([label, r]) => { const b = el('button', 'crumb', label); b.onclick = () => navigate(r, false); c.appendChild(b); c.appendChild(el('span', 'sep', '›')); });
+    t.appendChild(c);
+  }
   t.appendChild(el('h2', null, title));
   if (sub) t.appendChild(el('div', 'sub', sub));
   h.appendChild(t);
@@ -972,12 +1098,14 @@ function renderMain() {
   mainFilter = v === 'genre' ? route.genre : null;
   subFilter = v === 'genre' ? (route.sub || null) : null;
   tab = v === 'genre' ? (genreMode === 'albums' ? 'albums' : 'tracks') : v;
+  artistFilter = v === 'genre' ? (route.artist || null) : null;
   if (v === 'home') return viewHome(main);
   if (v === 'genres') return viewGenres(main);
   if (v === 'playlists') return viewPlaylists(main);
   if (v === 'search') return viewSearch(main);
   if (!tracks.length) { vhead(main, { title: plName() }); main.appendChild(el('div', 'center', 'Spellistan är tom, eller går inte att läsa (Spotify lämnar bara ut innehåll i listor du äger eller samarbetar på).')); return; }
   if (v === 'genre') return viewGenre(main);
+  if (v === 'artist') return viewArtist(main);
   const titles = { albums: 'Album', artists: 'Artister', tracks: 'Alla låtar', loose: 'Övriga låtar' };
   vhead(main, { title: titles[v], sub: plName(), back: libBack(), actions: [v !== 'artists' ? sortSelect(v !== 'albums') : null] });
   if (v === 'albums') listAlbums(main);
@@ -1018,14 +1146,33 @@ function viewGenres(main) {
 function viewGenre(main) {
   const g = route.genre, none = g === NONE;
   const st = genreStats().list.find(([n]) => n === g)?.[1];
-  vhead(main, { title: none ? 'Utan egen genre' : g, sub: (route.sub ? route.sub + ' · ' : '') + plName(),
-    back: isDesk() ? null : { label: 'Genrer', route: { view: 'genres' } }, actions: [sortSelect(genreMode !== 'albums')] });
+  const crumbs = [], gName = none ? 'Utan egen genre' : g;
+  const aE = route.artist ? artistMap.get(route.artist) : null;
+  if (route.sub || aE) crumbs.push([gName, { view: 'genre', genre: g }]);
+  if (route.sub && aE) crumbs.push([route.sub, { view: 'genre', genre: g, sub: route.sub }]);
+  const title = aE ? aE.name : (route.sub || gName);
+  vhead(main, { title, crumbs, sub: plName(), back: isDesk() ? null : { label: 'Genrer', route: { view: 'genres' } }, actions: [sortSelect(genreMode !== 'albums')] });
   if (st && st.subs.size) {
     const chips = el('div', 'gchips');
     const add = (label, on, r, c) => { const b = el('button', 'chip' + (on ? ' on' : ''), label); if (c != null) b.appendChild(el('span', 'c', String(c))); b.onclick = () => navigate(r, false); chips.appendChild(b); };
     add('Alla ' + g.toLowerCase(), !route.sub, { view: 'genre', genre: g });
     [...st.subs.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'sv')).forEach(([sg, n]) => add(sg, route.sub === sg, { view: 'genre', genre: g, sub: sg }, n));
     main.appendChild(chips);
+  }
+  // Artister i genren (och subgenren)
+  const inG = new Map();
+  const bump = (o, kind) => { const e = inG.get(o.id) || inG.set(o.id, { e: artistMap.get(o.id) || { id: o.id, name: o.name, cover: '' }, a: 0, s: 0 }).get(o.id); e[kind]++; };
+  albums.filter(a => matchesGenre(a.id)).forEach(a => bump(albumArtist(a), 'a'));
+  tracks.filter(x => matchesGenre(x.t.album.id)).forEach(x => { const o = ownerOf(x.t); if (looseUris.has(x.t.uri) || o.id !== albumArtist(x.t.album).id) bump(o, 's'); });
+  if (inG.size > 1 || route.artist) {
+    const row = el('div', 'arow');
+    const all = el('button', 'avatar' + (route.artist ? '' : ' on'));
+    all.appendChild(el('div', 'all', String(inG.size))); all.appendChild(el('div', 'n', 'Alla artister'));
+    all.onclick = () => { const r = { ...route }; delete r.artist; navigate(r, false); };
+    row.appendChild(all);
+    [...inG.values()].sort((x, y) => sortKey(x.e.name).localeCompare(sortKey(y.e.name), 'sv'))
+      .forEach(({ e }) => row.appendChild(avatarEl(e, { on: route.artist === e.id, onClick: () => navigate({ ...route, artist: route.artist === e.id ? undefined : e.id }, false) })));
+    main.appendChild(row);
   }
   const seg = el('div', 'seg small');
   [['albums', 'Album'], ['tracks', 'Låtar']].forEach(([m, l]) => {
@@ -1035,10 +1182,11 @@ function viewGenre(main) {
   });
   main.appendChild(seg);
   if (genreMode === 'albums') {
-    listAlbums(main);
-    const ls = loose.filter(x => matchesGenre(x.t.album.id));
+    const nAlb = albums.filter(x => matchesGenre(x.id) && matchesArtistAlbum(x)).length;
+    const ls = tracks.filter(x => matchesGenre(x.t.album.id) && (looseUris.has(x.t.uri) || (artistFilter && ownerOf(x.t).id === artistFilter && albumArtist(x.t.album).id !== artistFilter)) && matchesArtistTrack(x.t));
+    if (nAlb || !ls.length) listAlbums(main);
     if (ls.length) {
-      main.appendChild(el('div', 'sect', 'Lösa låtar'));
+      main.appendChild(el('div', 'sect', nAlb ? 'Lösa låtar' : 'Låtar'));
       const uris = ls.map(x => x.t.uri), l = el('div', 'list');
       ls.forEach((x, i) => l.appendChild(trackRow(x.t, { menu: true, onPlay: () => play({ uris, offset: { position: i } }, x.t.uri) })));
       main.appendChild(l);
@@ -1070,6 +1218,8 @@ function renderSearchResults(res) {
   if (!query.trim()) { res.appendChild(el('div', 'center', 'Skriv för att söka i ' + plName() + '.')); return; }
   const al = sortAlbums(albums.filter(a => matchesSearch(a.name, a.artist))).slice(0, 12);
   const tr = tracks.filter(x => matchesSearch(x.t.name, artistNames(x.t.artists), x.t.album.name)).slice(0, 100);
+  const ar = [...artistMap.values()].filter(e => (e.albums.length || e.songs.length) && matchesSearch(e.name)).slice(0, 12);
+  if (ar.length) { res.appendChild(el('div', 'sect', 'Artister')); const g = el('div', 'arow'); ar.forEach(e => g.appendChild(avatarEl(e))); res.appendChild(g); }
   if (al.length) { res.appendChild(el('div', 'sect', 'Album')); res.appendChild(grid(al)); }
   if (tr.length) {
     res.appendChild(el('div', 'sect', 'Låtar'));
@@ -1077,12 +1227,12 @@ function renderSearchResults(res) {
     tr.forEach((x, i) => l.appendChild(trackRow(x.t, { menu: true, onPlay: () => play({ uris, offset: { position: i } }, x.t.uri) })));
     res.appendChild(l);
   }
-  if (!al.length && !tr.length) res.appendChild(el('div', 'center', 'Inga träffar.'));
+  if (!al.length && !tr.length && !ar.length) res.appendChild(el('div', 'center', 'Inga träffar.'));
 }
 
 // --- Listor (används av både biblioteket och genrevyn)
 function listAlbums(main) {
-  const list = sortAlbums(albums.filter(a => matchesGenre(a.id)));
+  const list = sortAlbums(albums.filter(a => matchesGenre(a.id) && matchesArtistAlbum(a)));
   main.appendChild(toolbar(list.length + ' album', list.map(a => a.id)));
   if (!list.length) return main.appendChild(el('div', 'center', 'Inga album här.'));
   if (sortVal === 'genre' && route.view !== 'genre') {
@@ -1094,29 +1244,46 @@ function listAlbums(main) {
 }
 
 function listArtists(main) {
-  const groups = new Map();
-  const g = n => groups.get(n) || groups.set(n, { albums: [], loose: [] }).get(n);
-  albums.forEach(a => g(primaryArtist(a.artists)).albums.push(a));
-  loose.forEach(x => g(primaryArtist(x.t.artists)).loose.push(x));
-  const names = [...groups.keys()].sort((a, b) => sortKey(a).localeCompare(sortKey(b), 'sv'));
-  if (!names.length) return main.appendChild(el('div', 'center', 'Inga artister.'));
-  names.forEach(n => {
-    const grp = groups.get(n);
-    const list = grp.albums.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    const h = el('div', 'artist-h');
-    h.appendChild(el('div', 'n', n));
-    const gs = [...new Set([...list.map(a => a.id), ...grp.loose.map(x => x.t.album.id)].flatMap(genresFor))].slice(0, 4);
-    if (gs.length) h.appendChild(el('div', 'g', gs.join(' · ')));
-    main.appendChild(h);
-    if (list.length) main.appendChild(grid(list));
-    if (grp.loose.length) {
-      if (list.length) main.appendChild(el('div', 'loose-h', 'Lösa låtar'));
-      const ls = grp.loose.sort((a, b) => (b.t.album.release_date || '').localeCompare(a.t.album.release_date || ''));
-      const uris = ls.map(x => x.t.uri), l = el('div', 'list');
-      ls.forEach((x, i) => l.appendChild(trackRow(x.t, { menu: true, onPlay: () => play({ uris, offset: { position: i } }, x.t.uri) })));
-      main.appendChild(l);
-    }
-  });
+  const list = [...artistMap.values()].filter(e => e.albums.length || e.songs.length).sort((a, b) => sortKey(a.name).localeCompare(sortKey(b.name), 'sv'));
+  if (!list.length) return main.appendChild(el('div', 'center', 'Inga artister.'));
+  const g = el('div', 'agrid');
+  list.forEach(e => g.appendChild(avatarEl(e, { count: artistCountText(e) })));
+  main.appendChild(g);
+}
+
+// ===== Artistsida =====
+function viewArtist(main) {
+  const e = artistMap.get(route.artist);
+  const back = isDesk() ? null : { label: 'Tillbaka', route: { view: 'artists' } };
+  if (!e) { vhead(main, { title: 'Artisten finns inte i den här spellistan', back }); return; }
+  const hero = el('div', 'ahero');
+  if (back) { const b = btn('back', icon('left', '') + '<span>Tillbaka</span>', () => goBack(back.route)); b.style.width = '100%'; hero.appendChild(b); }
+  const img = el('img'); img.alt = ''; img.dataset.aid = e.id; img.src = artistImgUrl(e); hero.appendChild(img); wantArtistImg(e.id);
+  const info = el('div', 'info');
+  info.appendChild(el('h2', null, e.name));
+  const ids = [...e.albums.map(a => a.id), ...e.songs.map(x => x.t.album.id)];
+  const mainG = new Map(), subG = new Set();
+  ids.forEach(id => { const i = infoFor(id); if (i.main) mainG.set(i.main, (mainG.get(i.main) || 0) + 1); i.subs.forEach(x => subG.add(x)); });
+  const gp = el('div', 'gp');
+  [...mainG.entries()].sort((a, b) => b[1] - a[1]).forEach(([g]) => { const sp = el('span', 'main', g); gp.appendChild(sp); });
+  [...subG].slice(0, 5).forEach(x => gp.appendChild(el('span', null, x)));
+  if (gp.childNodes.length) info.appendChild(gp);
+  info.appendChild(el('div', 'meta', [artistCountText(e), e.feat.length ? `medverkar på ${e.feat.length}` : ''].filter(Boolean).join(' · ') + ' · ' + plName()));
+  const uris = [...e.albums.flatMap(a => a.items.map(x => x.t.uri)), ...e.songs.map(x => x.t.uri)].slice(0, 500);
+  const pb = el('button', 'primary', '▶  Spela allt'); pb.onclick = () => play({ uris }); info.appendChild(pb);
+  hero.appendChild(info); main.appendChild(hero);
+  if (e.albums.length) {
+    main.appendChild(el('div', 'sect', 'Album'));
+    main.appendChild(grid([...e.albums].sort((a, b) => (b.date || '').localeCompare(a.date || ''))));
+  }
+  const songList = (title, list, showAlbum = true) => {
+    main.appendChild(el('div', 'sect', title));
+    const u = list.map(x => x.t.uri), l = el('div', 'list');
+    list.forEach((x, i) => l.appendChild(trackRow(x.t, { menu: true, showCover: true, onPlay: () => play({ uris: u, offset: { position: i } }, x.t.uri) })));
+    main.appendChild(l);
+  };
+  if (e.songs.length) songList(e.albums.length ? 'Låtar utanför album' : 'Låtar', [...e.songs].sort((a, b) => (b.t.album.release_date || '').localeCompare(a.t.album.release_date || '')));
+  if (e.feat.length) songList('Medverkar på', e.feat);
 }
 
 function listTracks(main, isLoose) {
@@ -1124,7 +1291,7 @@ function listTracks(main, isLoose) {
   const source = isLoose ? loose : tracks;
   const byArtist = (a, b) => sortKey(artistNames(a.t.artists)).localeCompare(sortKey(artistNames(b.t.artists)), 'sv')
     || sortKey(a.t.album.name).localeCompare(sortKey(b.t.album.name), 'sv') || (a.t.disc_number - b.t.disc_number) || (a.t.track_number - b.t.track_number);
-  const list = source.filter(x => matchesGenre(x.t.album.id) && (!isLoose || !dupOnly || isDup(x.t))).sort((a, b) =>
+  const list = source.filter(x => matchesGenre(x.t.album.id) && matchesArtistTrack(x.t) && (!isLoose || !dupOnly || isDup(x.t))).sort((a, b) =>
     s === 'added' ? (b.added || '').localeCompare(a.added || '') :
     s === 'date' ? (b.t.album.release_date || '').localeCompare(a.t.album.release_date || '') || byArtist(a, b) :
     s === 'name' ? sortKey(a.t.name).localeCompare(sortKey(b.t.name), 'sv') :
@@ -1198,6 +1365,8 @@ function openTrackMenu(t) {
   const pb = el('button', 'primary', '▶  Spela');
   pb.onclick = () => { play({ context_uri: t.album.uri, offset: { uri: t.uri } }, t.uri); closeSheet(); };
   act.appendChild(pb);
+  const own = ownerOf(t);
+  if (artistMap.has(own.id)) { const gb = el('button', null, 'Gå till ' + own.name); gb.onclick = () => { closeSheet(); setTimeout(() => goArtist(own.id), 350); }; act.appendChild(gb); }
   const alb = albums.find(a => a.id === t.album.id);
   if (alb) { const ab = el('button', null, 'Visa albumet'); ab.onclick = () => openAlbum(alb); act.appendChild(ab); }
   inner.appendChild(act);
@@ -1207,6 +1376,21 @@ function openTrackMenu(t) {
   if (siblings > 1) inner.appendChild(el('div', 'gscope', `Gäller hela albumet ”${t.album.name}” (${siblings} låtar i listan).`));
   inner.appendChild(genreEditor([t.album.id], () => {}));
 
+  if (t.artists.length > 1) {
+    const ab = el('div', 'settings'); ab.appendChild(el('h3', null, 'Visa under artist'));
+    ab.appendChild(el('div', 'gscope', 'Välj vilken av låtens artister den ska ligga under på hyllan.'));
+    const w = el('div', 'mact');
+    const paintA = () => {
+      w.innerHTML = '';
+      const cur = ownerOf(t), def = looseUris.has(t.uri) ? asArtist(t.artists[0]) : albumArtist(t.album);
+      t.artists.forEach(a => {
+        const c = el('button', 'chip' + (cur.id === a.id ? ' on' : ''), a.name + (a.id === def.id ? ' (standard)' : ''));
+        c.onclick = () => { setArtistPref(t.uri, a.id === def.id ? null : asArtist(a)); paintA(); };
+        w.appendChild(c);
+      });
+    };
+    paintA(); ab.appendChild(w); inner.appendChild(ab);
+  }
   const del = el('button', 'danger', 'Ta bort ur spellistan'); del.style.marginTop = '8px';
   del.onclick = () => confirmRemove([t.uri]);
   inner.appendChild(del);
@@ -1337,7 +1521,11 @@ function openAlbum(a) {
   const hero = el('div', 'hero');
   const img = el('img'); img.src = a.imgBig; img.alt = ''; hero.appendChild(img);
   hero.appendChild(el('div', 't', a.name));
-  hero.appendChild(el('div', 's', a.artist + (a.date ? ' · ' + year(a.date) : '') + ' · ' + a.items.length + ' låtar'));
+  const sLine = el('div', 's');
+  const aLink = el('button', 'alink', a.artist); const aid = albumArtist(a).id;
+  aLink.onclick = () => { closeSheet(); setTimeout(() => goArtist(aid), 350); };
+  sLine.appendChild(aLink); sLine.appendChild(document.createTextNode((a.date ? ' · ' + year(a.date) : '') + ' · ' + a.items.length + ' låtar'));
+  hero.appendChild(sLine);
   const gBox = el('div', 'g'); hero.appendChild(gBox);
   const pb = el('button', 'primary', '▶  Spela'); pb.onclick = () => play({ context_uri: a.uri }, a.uri);
   hero.appendChild(pb);
@@ -1568,6 +1756,10 @@ function closeFull() { if (fullOpen) history.back(); }
 $('pMeta').onclick = openFull; $('pImg').onclick = openFull;
 $('fDown').onclick = closeFull;
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && fullOpen) closeFull(); });
+$('fArtist').onclick = () => {
+  if (!ps) return; const id = ps.item.artists?.[0]?.id; if (!artistMap.has(id)) return;
+  closeFull(); setTimeout(() => goArtist(id), 350);
+};
 $('fAlbum').onclick = $('fAlbumName').onclick = () => {
   const a = ps && albums.find(x => x.id === ps.item.album.id); if (!a) return;
   closeFull(); setTimeout(() => openAlbum(a), 350);
