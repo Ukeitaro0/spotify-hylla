@@ -399,7 +399,7 @@
 <script src="config.js"></script>
 <script>
 // ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
-const BUILD = '20261116-1321';
+const BUILD = '20261116-1359';
 (async () => {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
@@ -540,7 +540,7 @@ let useLastfm = store.get('use_lastfm') !== '0';
 function norm(v) {                      // tål det gamla formatet (en lista) från version 4
   if (!v) return null;
   if (Array.isArray(v)) return v.length ? { main: v[0], subs: v.slice(1) } : { main: '', subs: [] };
-  return { main: v.main || '', subs: v.subs || [] };
+  return { main: v.main || '', subs: v.subs || [], t: v.t || 0 };
 }
 const ownFor = albumId => norm(localGenres[albumId] ?? repoGenres[albumId]) || { main: '', subs: [] };
 const hasOwn = albumId => { const o = ownFor(albumId); return !!(o.main || o.subs.length); };
@@ -563,16 +563,28 @@ function ownNames(kind, withinMain) {     // kind: 'main' | 'subs'; sorterat på
   return [...count.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'sv')).map(x => x[0]);
 }
 function setOwn(albumId, v, save = true) {
-  localGenres[albumId] = { main: v.main || '', subs: v.subs || [] };
+  localGenres[albumId] = { main: v.main || '', subs: v.subs || [], t: Date.now() };
   if (save) store.set('own_genres_v1', JSON.stringify(localGenres));
 }
+// Export = bara det som ändrats på den här enheten och inte redan finns i genres.json, med tidsstämpel.
+// Då kan exporter från olika enheter slås ihop i valfri ordning: nyast per album vinner.
 function exportGenres() {
   const out = {};
-  allOwnIds().forEach(id => { const o = ownFor(id); if (o.main || o.subs.length) out[id] = o; });
+  Object.keys(localGenres).forEach(id => { const o = norm(localGenres[id]); out[id] = { main: o.main, subs: o.subs, t: o.t || Date.now() }; });
   return out;
 }
+const sameGenre = (a, b) => a && b && a.main === b.main && JSON.stringify(a.subs) === JSON.stringify(b.subs);
 async function loadRepoGenres() {
-  try { const r = await fetch('genres.json', { cache: 'no-store' }); if (r.ok) repoGenres = await r.json() || {}; } catch {}
+  try { const r = await fetch('genres.json', { cache: 'no-store' }); if (r.ok) repoGenres = await r.json() || {}; } catch { return; }
+  // Städa: lokala ändringar som redan finns i genres.json (eller där genres.json är nyare) behövs inte längre
+  let changed = false;
+  Object.keys(localGenres).forEach(id => {
+    const l = norm(localGenres[id]), r = norm(repoGenres[id]);
+    const empty = !l.main && !l.subs.length;
+    if ((r && sameGenre(l, r)) || (!r && empty) || (r && l.t && (r.t || 0) >= l.t)) { delete localGenres[id]; changed = true; }
+    else if (!l.t) { localGenres[id] = { ...l, t: Date.now() }; changed = true; }   // äldre ändring utan tidsstämpel
+  });
+  if (changed) store.set('own_genres_v1', JSON.stringify(localGenres));
 }
 
 // Spellistor och låtar sparas lokalt, så sidan visas direkt och bara hämtar om något ändrats.
@@ -1364,8 +1376,10 @@ function openSettings() {
   })();
   box.appendChild(el('h3', null, 'Genrer'));
   setTimeout(() => box.appendChild(el('p', null, 'Version ' + BUILD)), 0);
-  const n = Object.keys(exportGenres()).length;
-  box.appendChild(el('p', null, `Du har satt egna genrer på ${n} album. De sparas i den här webbläsaren. För att de ska finnas på alla enheter (och inte försvinna), exportera och lägg filen som genres.json i repot.`));
+  const n = Object.keys(exportGenres()).length, total = Object.values({ ...repoGenres, ...localGenres }).filter(v => { const o = norm(v); return o.main || o.subs.length; }).length;
+  box.appendChild(el('p', null, n
+    ? `${n} ändringar på den här enheten är inte uppladdade än (av ${total} album med genre). Kopiera och skicka dem till Claude. Ordningen mellan telefon och dator spelar ingen roll: det senast ändrade per album gäller.`
+    : `Allt är uppladdat. ${total} album har genre.`));
   const lab = el('label'); const cb = el('input'); cb.type = 'checkbox'; cb.checked = useLastfm;
   cb.onchange = () => { useLastfm = cb.checked; store.set('use_lastfm', useLastfm ? '1' : '0'); render(); };
   lab.appendChild(cb); lab.appendChild(el('span', null, 'Visa Last.fm-genrer på album utan egna'));
