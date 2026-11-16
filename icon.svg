@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="bg" cx="25%" cy="15%" r="95%">
+      <stop offset="0" stop-color="#2a2d44"/><stop offset="1" stop-color="#121318"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <!-- skiva som sticker upp bakom -->
+  <circle cx="610" cy="430" r="230" fill="#0b0c10"/>
+  <circle cx="610" cy="430" r="200" fill="none" stroke="#24262e" stroke-width="6"/>
+  <circle cx="610" cy="430" r="160" fill="none" stroke="#24262e" stroke-width="6"/>
+  <circle cx="610" cy="430" r="78" fill="#1ed760"/>
+  <circle cx="610" cy="430" r="14" fill="#0b0c10"/>
+  <!-- skivfodral på hyllan -->
+  <rect x="196" y="372" width="96" height="400" rx="16" fill="#c9875a"/>
+  <rect x="306" y="332" width="96" height="440" rx="16" fill="#5f86c4"/>
+  <g transform="rotate(-14 470 772)"><rect x="420" y="372" width="96" height="400" rx="16" fill="#b5677f"/></g>
+  <rect x="600" y="520" width="230" height="252" rx="20" fill="#e9e6df"/>
+  <rect x="632" y="552" width="166" height="166" rx="12" fill="#5e9f6c"/>
+  <!-- hyllplan -->
+  <rect x="150" y="772" width="724" height="40" rx="14" fill="#f3f3f6"/>
+</svg>
