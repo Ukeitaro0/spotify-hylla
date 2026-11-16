@@ -170,8 +170,8 @@
   .player { position: fixed; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 12;
     background: rgba(38,40,50,.82); backdrop-filter: blur(22px) saturate(1.5); -webkit-backdrop-filter: blur(22px) saturate(1.5);
     border: 1px solid var(--line); border-radius: 22px; box-shadow: 0 12px 34px rgba(0,0,0,.45); overflow: hidden;
-    transform: translateY(140%); transition: transform .35s cubic-bezier(.2,.8,.2,1); }
-  .player.on { transform: none; }
+    transform: translateY(calc(100% + 160px)); opacity: 0; visibility: hidden; transition: transform .35s cubic-bezier(.2,.8,.2,1), opacity .2s, visibility 0s .35s; }
+  .player.on { transform: none; opacity: 1; visibility: visible; transition: transform .35s cubic-bezier(.2,.8,.2,1), opacity .2s; }
   .player .in img, .player .meta { cursor: pointer; }
 
   /* Stor spelare */
@@ -399,7 +399,7 @@
 <script src="config.js"></script>
 <script>
 // ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
-const BUILD = '20261116-1127';
+const BUILD = '20261116-1321';
 (async () => {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
@@ -1436,13 +1436,35 @@ function paintFullProgress(f) {
   $('fFill').style.width = (f * 100) + '%'; $('fKnob').style.left = (f * 100) + '%';
   $('fPos').textContent = fmtDur(f * dur); $('fDur').textContent = '-' + fmtDur(dur - f * dur);
 }
+// Senast spelade sparas, så spelaren kan visa den och fortsätta därifrån när Spotify inte spelar något.
+let lastSaved = 0;
+function saveLast(s) {
+  if (Date.now() - lastSaved < 10000 && !s.is_playing === !ps?.is_playing) return;
+  lastSaved = Date.now();
+  try { store.set('last_played', JSON.stringify({ item: slimTrack(s.item), context: s.context?.uri || null, progress_ms: s.progress_ms || 0 })); } catch {}
+}
+function lastPlayed() {
+  try { const l = JSON.parse(store.get('last_played') || 'null'); if (!l || !l.item) return null;
+    return { item: l.item, is_playing: false, progress_ms: l.progress_ms || 0, device: null, context: l.context ? { uri: l.context } : null, stale: true }; }
+  catch { return null; }
+}
+async function resumeLast() {
+  const t = ps.item, pos = Math.max(0, Math.round(curPos()));
+  const ctx = ps.context?.uri;
+  const body = ctx && !ctx.includes(':artist:') ? { context_uri: ctx, offset: { uri: t.uri }, position_ms: pos } : { uris: [t.uri], position_ms: pos };
+  $('pIcon').innerHTML = ICON_PAUSE;
+  await play(body, t.uri);
+}
 function updatePlayer(s) {
-  if (!s || !s.item || s.item.type !== 'track') { ps = null; $('player').classList.remove('on'); document.body.classList.remove('has-player'); markPlaying(null); return; }
+  if (s && s.item && s.item.type === 'track') saveLast(s);
+  else s = lastPlayed();
+  if (!s) { ps = null; $('player').classList.remove('on'); document.body.classList.remove('has-player'); markPlaying(null); return; }
+  if (ps && ps.stale && s.stale) return;           // redan visad, rör inte lokal spolning
   ps = s; psAt = Date.now();
   const t = s.item;
   const src = bestImage(t.album.images, 64); if ($('pImg').src !== src) $('pImg').src = src;
   $('pTitle').textContent = t.name;
-  $('pSub').textContent = artistNames(t.artists) + (s.device?.name ? ' · ' + s.device.name : '');
+  $('pSub').textContent = artistNames(t.artists) + (s.stale ? ' · Senast spelat' : s.device?.name ? ' · ' + s.device.name : '');
   $('pIcon').innerHTML = s.is_playing ? ICON_PAUSE : ICON_PLAY;
   $('player').classList.add('on'); document.body.classList.add('has-player');
   paintFull();
@@ -1462,7 +1484,7 @@ function paintFull() {
   $('fShuffle').classList.toggle('on', !!ps.shuffle_state);
   $('fRepeat').classList.toggle('on', ps.repeat_state && ps.repeat_state !== 'off');
   $('fOne').hidden = ps.repeat_state !== 'track';
-  $('fDev').textContent = ps.device?.name ? 'Spelas på ' + ps.device.name : '';
+  $('fDev').textContent = ps.stale ? 'Senast spelat · tryck ▶ för att fortsätta' : ps.device?.name ? 'Spelas på ' + ps.device.name : '';
   const ctx = ps.context?.uri || '';
   $('fCtx').textContent = ctx.includes(':album:') ? 'Från albumet' : ctx.includes(':playlist:') ? 'Från spellistan' + (plMap.get(ctx.split(':').pop())?.name ? ' ' + plMap.get(ctx.split(':').pop()).name : '') : 'Spelas nu';
   $('fAlbum').style.visibility = albums.some(a => a.id === t.album.id) ? 'visible' : 'hidden';
@@ -1482,19 +1504,21 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) poll
 
 $('pPlay').onclick = async () => {
   if (!ps) return;
+  if (ps.stale) return resumeLast();
   const wasPlaying = ps.is_playing;
   ps.progress_ms = curPos(); psAt = Date.now(); ps.is_playing = !wasPlaying;
   $('pIcon').innerHTML = ps.is_playing ? ICON_PAUSE : ICON_PLAY; paintFull();
   try { await api('/me/player/' + (wasPlaying ? 'pause' : 'play'), { method: 'PUT' }); } catch (e) { toast('Fel: ' + e.message, 3000); }
   pollSoon();
 };
-$('pNext').onclick = async () => { try { await api('/me/player/next', { method: 'POST' }); } catch (e) { toast('Fel: ' + e.message, 3000); } pollSoon(); };
-$('pPrev').onclick = async () => { try { await api('/me/player/previous', { method: 'POST' }); } catch (e) { toast('Fel: ' + e.message, 3000); } pollSoon(); };
+$('pNext').onclick = async () => { if (ps?.stale) return resumeLast(); try { await api('/me/player/next', { method: 'POST' }); } catch (e) { toast('Fel: ' + e.message, 3000); } pollSoon(); };
+$('pPrev').onclick = async () => { if (ps?.stale) return resumeLast(); try { await api('/me/player/previous', { method: 'POST' }); } catch (e) { toast('Fel: ' + e.message, 3000); } pollSoon(); };
 $('pBar').onclick = async e => {
   if (!ps) return;
   const r = $('pBar').getBoundingClientRect();
   const pos = Math.round(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * ps.item.duration_ms);
   ps.progress_ms = pos; psAt = Date.now(); paintProgress();
+  if (ps.stale) return;
   try { await api('/me/player/seek?position_ms=' + pos, { method: 'PUT' }); } catch (e2) { toast('Fel: ' + e2.message, 3000); }
   pollSoon();
 };
@@ -1537,6 +1561,7 @@ $('fRepeat').onclick = async () => {
     if (!scrubbing) return; scrubbing = false;
     const pos = Math.round(frac(e) * ps.item.duration_ms);
     ps.progress_ms = pos; psAt = Date.now(); paintProgress();
+    if (ps.stale) return;
     try { await api('/me/player/seek?position_ms=' + pos, { method: 'PUT' }); } catch (e2) { toast('Fel: ' + e2.message, 3000); }
     pollSoon();
   };
