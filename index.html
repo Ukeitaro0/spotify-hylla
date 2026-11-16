@@ -326,7 +326,7 @@
 <script src="config.js"></script>
 <script>
 // ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
-const BUILD = '20261116-0642';
+const BUILD = '20261116-1048';
 (async () => {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
@@ -740,7 +740,6 @@ function trackRow(t, { num, onPlay, showCover = true, showGenre = false, menu = 
   const sub = el('div', 's', artistNames(t.artists) + (showCover ? ' · ' + t.album.name : ''));
   if (showGenre) {
     if (isDup(t)) { sub.appendChild(document.createTextNode(' · ')); sub.appendChild(el('span', 'dup', 'finns på album')); }
-    const o = ownFor(t.album.id); if (o.main) { sub.appendChild(document.createTextNode(' · ')); sub.appendChild(el('span', 'gtag', [o.main, ...o.subs].join(', '))); }
   }
   m.appendChild(sub);
   r.appendChild(m);
