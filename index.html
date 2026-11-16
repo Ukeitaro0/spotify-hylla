@@ -325,6 +325,20 @@
 
 <script src="config.js"></script>
 <script>
+// ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
+const BUILD = '20261116-0642';
+(async () => {
+  try {
+    const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) return;
+    const { build } = await r.json();
+    if (build && build !== BUILD && sessionStorage.getItem('reloaded_for') !== build) {
+      sessionStorage.setItem('reloaded_for', build);
+      location.replace(location.pathname + '?v=' + build);
+    }
+  } catch {}
+})();
+
 // ===== Inställningar =====
 const CLIENT_ID = '60281313632147df82bb02cdd1691929';
 const REDIRECT_URI = location.hostname === 'ukeitaro0.github.io'
@@ -1060,6 +1074,7 @@ function openSettings() {
     } catch (e) { inv.textContent = 'Kunde inte räkna: ' + e.message; }
   })();
   box.appendChild(el('h3', null, 'Genrer'));
+  setTimeout(() => box.appendChild(el('p', null, 'Version ' + BUILD)), 0);
   const n = Object.keys(exportGenres()).length;
   box.appendChild(el('p', null, `Du har satt egna genrer på ${n} album. De sparas i den här webbläsaren. För att de ska finnas på alla enheter (och inte försvinna), exportera och lägg filen som genres.json i repot.`));
   const lab = el('label'); const cb = el('input'); cb.type = 'checkbox'; cb.checked = useLastfm;
