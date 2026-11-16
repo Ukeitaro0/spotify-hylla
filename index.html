@@ -212,7 +212,10 @@
   .fullp .fctl .small .one { position: absolute; font-size: 9px; font-weight: 800; color: var(--accent); top: 14px; right: 12px; }
   .fullp .fctl .big { width: 76px; height: 76px; background: #fff; }
   .fullp .fctl .big svg { fill: #111; width: 34px; height: 34px; }
-  .fullp .dev { text-align: center; font-size: 12px; color: rgba(255,255,255,.55); margin-top: 14px; }
+  .fullp .dev { display: block; margin: 14px auto 0; background: transparent; border: none; text-align: center; font-size: 12px; color: rgba(255,255,255,.65); padding: 6px 10px; }
+  .fullp .dev:not(:empty)::after { content: " ▾"; }
+  .fullp .devs { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 8px; }
+  .fullp .devs .lbl { font-size: 12px; color: rgba(255,255,255,.6); }
   @media (min-width: 800px) { .fullp { padding-left: calc(50% - 300px); padding-right: calc(50% - 300px); } }
   @media (min-width: 800px) { .player { left: 50%; right: auto; width: 640px; margin-left: -320px; } }
   .player .in { display: flex; align-items: center; gap: 12px; padding: 10px 10px 8px; }
@@ -441,7 +444,8 @@
       <button id="fNext" title="Nästa"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
       <button class="small" id="fRepeat" title="Upprepa"><svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2z"/></svg><span class="one" id="fOne" hidden>1</span></button>
     </div>
-    <div class="dev" id="fDev"></div>
+    <button class="dev" id="fDev"></button>
+    <div class="devs" id="fDevs" hidden></div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -449,7 +453,7 @@
 <script src="config.js"></script>
 <script>
 // ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
-const BUILD = '20261116-1435';
+const BUILD = '20261116-1846';
 (async () => {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
@@ -1754,6 +1758,7 @@ $('fAlbum').onclick = $('fAlbumName').onclick = () => {
 $('fPlay').onclick = () => $('pPlay').onclick();
 $('fNext').onclick = () => $('pNext').onclick();
 $('fPrev').onclick = () => $('pPrev').onclick();
+$('fDev').onclick = showDevicePicker;
 $('fShuffle').onclick = async () => {
   if (!ps) return; ps.shuffle_state = !ps.shuffle_state; paintFull();
   try { await api('/me/player/shuffle?state=' + ps.shuffle_state, { method: 'PUT' }); } catch (e) { toast('Fel: ' + e.message, 3000); } pollSoon();
@@ -1788,23 +1793,56 @@ $('fRepeat').onclick = async () => {
 })();
 
 // ===== Uppspelning (styr Spotify-appen) =====
+// ===== Vilken enhet ska spela? =====
+// Hyllan på telefonen spelar på telefonens Spotify, Hyllan på datorn på datorns. Inte på den som råkar ha spelat senast.
+const onTouch = window.matchMedia('(pointer: coarse)').matches;
+const MY_TYPES = onTouch ? ['Smartphone', 'Tablet'] : ['Computer'];
+function pickMyDevice(devices) {
+  const ok = devices.filter(d => !d.is_restricted);
+  const saved = store.get('my_device');
+  return ok.find(d => d.id === saved) || ok.find(d => MY_TYPES.includes(d.type) && d.is_active) || ok.find(d => MY_TYPES.includes(d.type)) || null;
+}
+async function getDevices() { try { return (await api('/me/player/devices'))?.devices || []; } catch { return []; } }
 async function play(body, fallbackUri) {
-  try {
-    await api('/me/player/play', { method: 'PUT', body: JSON.stringify(body) });
-    toast('Spelar ▶'); pollSoon(); return;
-  } catch (e) {
-    if (e.status !== 404) { toast((e.status === 403 ? 'Spotify nekade: ' : 'Fel: ') + e.message, 4000); return; }
+  const devices = await getDevices();
+  const mine = pickMyDevice(devices);
+  if (mine) {
+    try {
+      await api('/me/player/play?device_id=' + encodeURIComponent(mine.id), { method: 'PUT', body: JSON.stringify(body) });
+      store.set('my_device', mine.id);
+      toast(mine.is_active ? 'Spelar ▶' : 'Spelar på ' + mine.name + ' ▶'); pollSoon(); return;
+    } catch (e) { if (e.status !== 404) { toast((e.status === 403 ? 'Spotify nekade: ' : 'Fel: ') + e.message, 4000); return; } }
   }
-  try {
-    const { devices } = await api('/me/player/devices');
-    const d = (devices || []).find(x => !x.is_restricted);
-    if (d) {
-      await api('/me/player/play?device_id=' + encodeURIComponent(d.id), { method: 'PUT', body: JSON.stringify(body) });
-      toast('Spelar på ' + d.name + ' ▶'); pollSoon(); return;
+  if (!onTouch) {                 // datorn: ingen Spotify på datorn igång, spela där det redan spelar
+    const any = devices.find(d => d.is_active && !d.is_restricted) || devices.find(d => !d.is_restricted);
+    if (any) {
+      try { await api('/me/player/play?device_id=' + encodeURIComponent(any.id), { method: 'PUT', body: JSON.stringify(body) }); toast('Spelar på ' + any.name + ' ▶'); pollSoon(); return; } catch {}
     }
-  } catch {}
-  toast('Ingen aktiv Spotify-enhet, öppnar appen…', 3000);
+  }
+  // Telefonen: Spotify-appen här är inte vaken. Öppna den i stället för att spela på en annan enhet.
+  toast('Väcker Spotify på den här enheten…', 3000);
   if (fallbackUri) setTimeout(() => { location.href = fallbackUri; }, 600);
+}
+
+// Byt enhet från stora spelaren
+async function showDevicePicker() {
+  const box = $('fDevs');
+  if (!box.hidden) { box.hidden = true; return; }
+  box.innerHTML = ''; box.hidden = false; box.appendChild(el('div', 'lbl', 'Hämtar enheter…'));
+  const devices = (await getDevices()).filter(d => !d.is_restricted);
+  box.innerHTML = '';
+  if (!devices.length) { box.appendChild(el('div', 'lbl', 'Inga Spotify-enheter är igång just nu.')); return; }
+  devices.forEach(d => {
+    const b = el('button', 'chip' + (d.is_active ? ' on' : ''), d.name);
+    b.onclick = async () => {
+      box.hidden = true;
+      try { await api('/me/player', { method: 'PUT', body: JSON.stringify({ device_ids: [d.id], play: true }) });
+        if (MY_TYPES.includes(d.type)) store.set('my_device', d.id);
+        toast('Spelar på ' + d.name); pollSoon(); }
+      catch (e) { toast('Fel: ' + e.message, 3000); }
+    };
+    box.appendChild(b);
+  });
 }
 
 // ===== Start =====
