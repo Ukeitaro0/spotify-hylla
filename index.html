@@ -449,7 +449,7 @@
 <script src="config.js"></script>
 <script>
 // ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
-const BUILD = '20261116-1420';
+const BUILD = '20261116-1430';
 (async () => {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
@@ -1366,7 +1366,9 @@ function openTrackMenu(t) {
   pb.onclick = () => { play({ context_uri: t.album.uri, offset: { uri: t.uri } }, t.uri); closeSheet(); };
   act.appendChild(pb);
   const own = ownerOf(t);
-  if (artistMap.has(own.id)) { const gb = el('button', null, 'Gå till ' + own.name); gb.onclick = () => { closeSheet(); setTimeout(() => goArtist(own.id), 350); }; act.appendChild(gb); }
+  const gb = el('button'); act.appendChild(gb);
+  const paintGo = () => { const o = ownerOf(t); gb.hidden = !artistMap.has(o.id); gb.textContent = 'Gå till ' + o.name; gb.onclick = () => { closeSheet(); setTimeout(() => goArtist(o.id), 350); }; };
+  paintGo();
   const alb = albums.find(a => a.id === t.album.id);
   if (alb) { const ab = el('button', null, 'Visa albumet'); ab.onclick = () => openAlbum(alb); act.appendChild(ab); }
   inner.appendChild(act);
@@ -1385,7 +1387,7 @@ function openTrackMenu(t) {
       const cur = ownerOf(t), def = looseUris.has(t.uri) ? asArtist(t.artists[0]) : albumArtist(t.album);
       t.artists.forEach(a => {
         const c = el('button', 'chip' + (cur.id === a.id ? ' on' : ''), a.name + (a.id === def.id ? ' (standard)' : ''));
-        c.onclick = () => { setArtistPref(t.uri, a.id === def.id ? null : asArtist(a)); paintA(); };
+        c.onclick = () => { setArtistPref(t.uri, a.id === def.id ? null : asArtist(a)); paintA(); paintGo(); };
         w.appendChild(c);
       });
     };
