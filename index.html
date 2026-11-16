@@ -453,7 +453,7 @@
 <script src="config.js"></script>
 <script>
 // ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
-const BUILD = '20261116-1846';
+const BUILD = '20261116-1852';
 (async () => {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
@@ -1819,10 +1819,29 @@ async function play(body, fallbackUri) {
       try { await api('/me/player/play?device_id=' + encodeURIComponent(any.id), { method: 'PUT', body: JSON.stringify(body) }); toast('Spelar på ' + any.name + ' ▶'); pollSoon(); return; } catch {}
     }
   }
-  // Telefonen: Spotify-appen här är inte vaken. Öppna den i stället för att spela på en annan enhet.
-  toast('Väcker Spotify på den här enheten…', 3000);
-  if (fallbackUri) setTimeout(() => { location.href = fallbackUri; }, 600);
+  // Telefonen: Spotify-appen här är inte vaken (iPhone listar den inte när den ligger i bakgrunden).
+  // Öppna Spotify så den vaknar, och spela det valda när man kommer tillbaka till Hyllan.
+  wakeSpotify({ body });
 }
+function wakeSpotify(pending) {
+  try { sessionStorage.setItem('pending_play', JSON.stringify({ ...pending, at: Date.now() })); } catch {}
+  toast('Öppnar Spotify. Gå tillbaka till Hyllan så startar musiken här.', 4000);
+  setTimeout(() => { location.href = 'spotify:'; }, 700);
+}
+async function handlePending() {
+  let p = null; try { p = JSON.parse(sessionStorage.getItem('pending_play') || 'null'); } catch {}
+  if (!p || Date.now() - p.at > 5 * 60000) return;
+  sessionStorage.removeItem('pending_play');
+  let mine = null;
+  for (let i = 0; i < 4 && !mine; i++) { await new Promise(r => setTimeout(r, 700)); mine = pickMyDevice(await getDevices()); }
+  if (!mine) { toast('Hittar inte Spotify på telefonen. Starta en låt i Spotify-appen en gång och försök igen.', 5000); return; }
+  try {
+    if (p.body) await api('/me/player/play?device_id=' + encodeURIComponent(mine.id), { method: 'PUT', body: JSON.stringify(p.body) });
+    else await api('/me/player', { method: 'PUT', body: JSON.stringify({ device_ids: [mine.id], play: true }) });
+    store.set('my_device', mine.id); toast('Spelar på ' + mine.name + ' ▶'); pollSoon();
+  } catch (e) { toast('Fel: ' + e.message, 4000); }
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) handlePending(); });
 
 // Byt enhet från stora spelaren
 async function showDevicePicker() {
@@ -1831,7 +1850,12 @@ async function showDevicePicker() {
   box.innerHTML = ''; box.hidden = false; box.appendChild(el('div', 'lbl', 'Hämtar enheter…'));
   const devices = (await getDevices()).filter(d => !d.is_restricted);
   box.innerHTML = '';
-  if (!devices.length) { box.appendChild(el('div', 'lbl', 'Inga Spotify-enheter är igång just nu.')); return; }
+  if (onTouch && !devices.some(d => MY_TYPES.includes(d.type))) {
+    const me = el('button', 'chip', 'Den här telefonen');
+    me.onclick = () => { box.hidden = true; wakeSpotify({ transfer: true }); };
+    box.appendChild(me);
+  }
+  if (!devices.length && !onTouch) { box.appendChild(el('div', 'lbl', 'Inga Spotify-enheter är igång just nu.')); return; }
   devices.forEach(d => {
     const b = el('button', 'chip' + (d.is_active ? ' on' : ''), d.name);
     b.onclick = async () => {
