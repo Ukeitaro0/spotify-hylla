@@ -86,5 +86,6 @@
  "5PflBP4GjYSCtb54nCdra0": {"main": "Rock", "subs": ["Soft Rock"], "t": 1794865323154},
  "22sKPJ4HaJbLghwRQXac1u": {"main": "Country", "subs": ["Americana"], "t": 1794865384938},
  "artist:spotify:track:0OgIjOcARxnYgm5iL5P6AA": {"artist": {"id": "6Rx1JKzBrSzoKQtmbVmBnM", "name": "Hayley Williams"}, "t": 1794863361320},
- "artist:spotify:track:3gonMuZGs7azinX3kYcG6E": {"artist": {"id": "5e1BZulIiYWPRm8yogwUYH", "name": "Tegan and Sara"}, "t": 1794864759033}
+ "artist:spotify:track:3gonMuZGs7azinX3kYcG6E": {"artist": {"id": "5e1BZulIiYWPRm8yogwUYH", "name": "Tegan and Sara"}, "t": 1794864759033},
+ "artist:spotify:track:7fPQXCZQh6FXVRm2Al4bPt": {"artist": {"id": "6Rx1JKzBrSzoKQtmbVmBnM", "name": "Hayley Williams"}, "t": 1794835703313}
 }
