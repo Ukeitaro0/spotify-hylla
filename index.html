@@ -475,7 +475,7 @@
 <script src="config.js"></script>
 <script>
 // ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
-const BUILD = '20261117-0912';
+const BUILD = '20261117-0934';
 (async () => {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
@@ -508,6 +508,20 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, v); } catch {} },
   del(k) { try { localStorage.removeItem(k); } catch {} },
 };
+// Spellistornas innehåll sparas i IndexedDB, en post per lista. localStorage räcker inte för hela biblioteket.
+const idb = (() => {
+  let dbp = null;
+  const open = () => dbp || (dbp = new Promise((res, rej) => {
+    const r = indexedDB.open('hyllan', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('pl', { keyPath: 'id' });
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  }));
+  const tx = async (mode, fn) => {
+    const db = await open();
+    return new Promise((res, rej) => { const t = db.transaction('pl', mode); const q = fn(t.objectStore('pl')); t.oncomplete = () => res(q.result); t.onerror = () => rej(t.error); });
+  };
+  return { get: id => tx('readonly', st => st.get(id)).catch(() => null), put: v => tx('readwrite', st => st.put(v)).catch(() => null) };
+})();
 
 const $ = id => document.getElementById(id);
 function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -674,8 +688,13 @@ async function loadRepoGenres() {
 }
 
 // Spellistor och låtar sparas lokalt, så sidan visas direkt och bara hämtar om något ändrats.
-function readCache() { try { return JSON.parse(store.get('pl_cache_v1') || 'null'); } catch { return null; } }
-function writeCache(c) { try { localStorage.setItem('pl_cache_v1', JSON.stringify(c)); } catch { store.del('pl_cache_v1'); } }
+async function readCache(id) { return id ? await idb.get(id) : null; }
+async function writeCache(c) { await idb.put({ id: c.id, snapshot: c.snapshot, items: c.items, ts: Date.now() }); }
+async function migrateCache() {          // gamla cachen (en lista i localStorage) flyttas till IndexedDB en gång
+  const old = store.get('pl_cache_v1'); if (!old) return null;
+  let id = null; try { const c = JSON.parse(old); if (c && c.id) { await writeCache(c); id = c.id; } } catch {}
+  store.del('pl_cache_v1'); return id;
+}
 function fillPlaylistSelect(list, pickId) { renderSide(); }
 async function loadPlaylists() {
   const playlists = (await getAll('/me/playlists?limit=50')).filter(Boolean).map(p => ({ id: p.id, name: p.name, snapshot_id: p.snapshot_id,
@@ -683,6 +702,7 @@ async function loadPlaylists() {
   store.set('pl_list_v1', JSON.stringify(playlists));
   plMap = new Map(playlists.map(p => [p.id, p]));
   const saved = store.get('playlist_id');
+  if (saved === LIB && libSources().length) { fillPlaylistSelect(playlists, LIB); return { id: LIB }; }
   const pick = playlists.find(p => p.id === saved) || playlists.find(p => p.name.trim() === DEFAULT_PLAYLIST_NAME) || playlists[0];
   fillPlaylistSelect(playlists, pick && pick.id);
   return pick;
@@ -696,15 +716,16 @@ function slimTrack(t) {
       release_date: t.album.release_date, images: (t.album.images || []).map(i => ({ url: i.url, width: i.width })), artists: slimArtists(t.album.artists) } };
 }
 
-async function fetchItems(id) {
+async function fetchItems(id, gentle = false) {
   const first = await api(`/playlists/${id}/items?limit=50`);
   let raw = first.items || [];
   if (first.next && first.total) {
     const offsets = []; for (let o = raw.length; o < first.total; o += 50) offsets.push(o);
-    while (offsets.length) {                                   // 4 sidor åt gången
-      const batch = offsets.splice(0, 4);
+    while (offsets.length) {                                   // 4 sidor åt gången, eller 1 i taget med paus när biblioteket läses in
+      const batch = offsets.splice(0, gentle ? 1 : 4);
       const pages = await Promise.all(batch.map(o => api(`/playlists/${id}/items?limit=50&offset=${o}`)));
       pages.forEach(p => { raw = raw.concat(p.items || []); });
+      if (gentle) await new Promise(r => setTimeout(r, 400));
     }
   } else if (first.next) {
     raw = raw.concat(await getAll(first.next));
@@ -818,9 +839,51 @@ function avatarEl(e, { on = false, count = '', onClick } = {}) {
 }
 function goArtist(id) { navigate({ view: 'artist', artist: id, tab: VIEW_TAB_OF(route) }); }
 
+// ===== Biblioteket: flera spellistor som en (just nu årslistorna 2012 och framåt) =====
+const LIB = '__lib__', LIB_FROM = 2012;
+let libStatus = '';
+const libYear = p => { const n = (p.name || '').trim(); return /^\d{4}$/.test(n) ? +n : 0; };
+const libSources = () => [...plMap.values()].filter(p => libYear(p) >= LIB_FROM && libYear(p) <= new Date().getFullYear() + 1)
+  .sort((a, b) => libYear(b) - libYear(a));
+function libTitle() { const y = libSources().map(libYear); return y.length ? `Årslistor ${Math.min(...y)}–${Math.max(...y)}` : 'Årslistor'; }
+function mergeLib(lists) {               // nyaste året först; en låt som finns i flera listor räknas en gång
+  const seen = new Set(), out = [];
+  lists.forEach(items => items.forEach(x => { if (!seen.has(x.t.uri)) { seen.add(x.t.uri); out.push(x); } }));
+  return out;
+}
+async function libCached() {
+  const src = libSources(), have = new Map();
+  for (const p of src) { const c = await readCache(p.id); if (c && c.items) have.set(p.id, c); }
+  return { src, have };
+}
+// Läser bara listor som är nya eller ändrade, en sida i taget med paus. Avbryts den fortsätter den nästa gång.
+async function loadLibrary() {
+  if (curId !== LIB) { mainFilter = subFilter = null; exitSelect(); }
+  store.set('playlist_id', LIB); curId = LIB;
+  const { src, have } = await libCached();
+  const show = () => { build(mergeLib(src.map(p => have.get(p.id)?.items).filter(Boolean))); render(); };
+  const todo = src.filter(p => { const c = have.get(p.id); return !c || !p.snapshot_id || c.snapshot !== p.snapshot_id; });
+  show();
+  try {
+    for (let i = 0; i < todo.length; i++) {
+      if (curId !== LIB) return;
+      const p = todo[i];
+      libStatus = `läser in ${p.name} (${i + 1} av ${todo.length})`; renderMain();
+      const items = await fetchItems(p.id, true);
+      await writeCache({ id: p.id, snapshot: p.snapshot_id, items });
+      have.set(p.id, { items });
+      libStatus = i + 1 < todo.length ? `läser in (${i + 1} av ${todo.length} klara)` : '';
+      if (curId === LIB) show();
+    }
+  } finally { if (libStatus) { libStatus = ''; if (curId === LIB) render(); } }
+  if (todo.length) toast('Årslistorna är inlästa');
+  loadGenres();
+}
+
 async function loadPlaylist(id, force = false) {
+  if (id === LIB) return loadLibrary();
   const snapshot = plMap.get(id)?.snapshot_id || null;
-  const c = readCache();
+  const c = await readCache(id);
   const cacheOk = c && c.id === id && snapshot && c.snapshot === snapshot;
   if (curId !== id) { mainFilter = subFilter = null; exitSelect(); }
   store.set('playlist_id', id);
@@ -831,7 +894,7 @@ async function loadPlaylist(id, force = false) {
   const showingCached = c && c.id === id && curId === id && tracks.length;
   if (!showingCached) $('main').innerHTML = '<div class="center">Hämtar låtar…</div>';
   const items = await fetchItems(id);
-  writeCache({ id, snapshot, items });
+  await writeCache({ id, snapshot, items });
   curId = id; build(items); render();
   if (showingCached && !force) toast('Spellistan uppdaterad');
   loadGenres();
@@ -864,6 +927,7 @@ async function loadGenres() {
   const fresh = Date.now() - GENRE_CACHE_DAYS * 864e5;
   const todo = [...albumsSeen.values()].filter(a => !(genreCache[a.id] && genreCache[a.id].ts > fresh));
   if (!todo.length) return;
+  const slow = todo.length > 60;
   let done = 0, failed = 0;
   const artistTags = async name => {
     const key = 'artist:' + name.toLowerCase();
@@ -884,7 +948,9 @@ async function loadGenres() {
       } catch (e) {
         failed++;
         if (e.code === 10 || e.code === 26) { toast('Last.fm-nyckeln fungerar inte', 4000); todo.length = 0; }
+        if (e.code === 29) todo.length = 0;            // Last.fm: för många anrop, försök nästa gång
       }
+      if (slow) await new Promise(r => setTimeout(r, 300));
       if (++done % 15 === 0) { store.set('genres_v2', JSON.stringify(genreCache)); renderSide(); }
     }
   };
@@ -1023,7 +1089,7 @@ const GENRE_COLORS = ['#c9875a', '#5f86c4', '#b5677f', '#5e9f6c', '#8c7bc4', '#b
 function genreColor(g) { let h = 0; for (const ch of g) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return GENRE_COLORS[h % GENRE_COLORS.length]; }
 const countText = (a, t) => [a ? `${a} album` : '', t ? `${t} ${t === 1 ? 'låt' : 'låtar'}` : ''].filter(Boolean).join(' · ') || 'tomt';
 const artistCount = () => new Set([...albums.map(a => primaryArtist(a.artists)), ...loose.map(x => primaryArtist(x.t.artists))]).size;
-const plName = () => plMap.get(curId)?.name || 'Spellista';
+const plName = () => curId === LIB ? libTitle() + (libStatus ? ' · ' + libStatus : '') : (plMap.get(curId)?.name || 'Spellista');
 
 // --- Sidomeny (dator)
 let plKey = '';
@@ -1063,6 +1129,11 @@ function renderPlaylistList(box, q, cls) {
   box.innerHTML = '';
   const k = sortKey(q.trim());
   const list = [...plMap.values()].filter(p => !k || sortKey(p.name).includes(k));
+  const src = libSources();
+  if (src.length && (!k || sortKey(libTitle() + ' bibliotek').includes(k))) {
+    const b = btn(cls + (curId === LIB ? ' on' : ''), (cls === 'srow' ? icon('lib') : '') + `<span class="lbl"></span><span class="c">${src.length} listor</span>`, () => pickPlaylist(LIB));
+    b.dataset.id = LIB; b.querySelector('.lbl').textContent = libTitle(); box.appendChild(b);
+  }
   list.forEach(p => {
     const on = p.id === curId;
     const b = btn(cls + (on ? ' on' : ''), (cls === 'srow' ? icon('list') : '') + `<span class="lbl"></span><span class="c">${p.total != null ? p.total : ''}</span>`, () => pickPlaylist(p.id));
@@ -1129,6 +1200,7 @@ function renderMain() {
   if (v === 'genres') return viewGenres(main);
   if (v === 'playlists') return viewPlaylists(main);
   if (v === 'search') return viewSearch(main);
+  if (!tracks.length && curId === LIB && libStatus) { vhead(main, { title: plName() }); main.appendChild(el('div', 'center', 'Läser in årslistorna. Det tar en stund första gången, sedan går det fort.')); return; }
   if (!tracks.length) { vhead(main, { title: plName() }); main.appendChild(el('div', 'center', 'Spellistan är tom, eller går inte att läsa (Spotify lämnar bara ut innehåll i listor du äger eller samarbetar på).')); return; }
   if (v === 'genre') return viewGenre(main);
   if (v === 'artist') return viewArtist(main);
@@ -1386,7 +1458,7 @@ function exitSelect() { if (!selecting) return; selecting = false; selected.clea
 function toggleSel(id) { selected.has(id) ? selected.delete(id) : selected.add(id); updateSelbar(); render(); }
 function updateSelbar() {
   $('selbar').classList.toggle('on', selecting);
-  $('selDel').hidden = !(tab === 'loose' || tab === 'tracks');
+  $('selDel').hidden = curId === LIB || !(tab === 'loose' || tab === 'tracks');
   $('selDel').disabled = !selected.size; $('selDel').style.opacity = selected.size ? 1 : .5;
   $('selGo').textContent = selected.size ? `Sätt genre (${selected.size})` : 'Sätt genre';
   $('selGo').disabled = !selected.size; $('selGo').style.opacity = selected.size ? 1 : .5;
@@ -1440,9 +1512,11 @@ function openTrackMenu(t) {
     };
     paintA(); ab.appendChild(w); inner.appendChild(ab);
   }
-  const del = el('button', 'danger', 'Ta bort ur spellistan'); del.style.marginTop = '8px';
-  del.onclick = () => confirmRemove([t.uri]);
-  inner.appendChild(del);
+  if (curId !== LIB) {
+    const del = el('button', 'danger', 'Ta bort ur spellistan'); del.style.marginTop = '8px';
+    del.onclick = () => confirmRemove([t.uri]);
+    inner.appendChild(del);
+  }
   showSheet();
 }
 
@@ -1487,7 +1561,7 @@ async function removeFromPlaylist(uris) {
   const gone = new Set(uris);
   const items = tracks.filter(x => !gone.has(x.t.uri));
   if (snapshot && plMap.get(curId)) plMap.get(curId).snapshot_id = snapshot;
-  writeCache({ id: curId, snapshot, items });
+  await writeCache({ id: curId, snapshot, items });
   build(items); render();
 }
 
@@ -1606,7 +1680,7 @@ function openSettings() {
   $('bgart').style.backgroundImage = 'none';
   const box = el('div', 'settings');
   const rl = el('button', null, '⟳  Hämta om spellistan nu'); rl.style.marginBottom = '8px';
-  rl.onclick = () => { closeSheet(); loadPlaylist(curId, true).catch(err => toast(err.message, 4000)); };
+  rl.onclick = () => { closeSheet(); (curId === LIB ? loadPlaylists().then(() => loadLibrary()) : loadPlaylist(curId, true)).catch(err => toast(err.message, 4000)); };
   box.appendChild(rl);
   // Inventering inför "Hela biblioteket"
   box.appendChild(el('h3', null, 'Bibliotek'));
@@ -1979,9 +2053,13 @@ document.addEventListener('focusout', e => {
     if (!store.get('access_token') && !store.get('refresh_token')) return showLogin();
     document.body.classList.remove('nologin');
     // 1. Visa senast sparade direkt
-    const c = readCache();
+    const migrated = await migrateCache();
     let list = []; try { list = JSON.parse(store.get('pl_list_v1') || '[]'); } catch {}
     plMap = new Map(list.map(p => [p.id, p]));
+    const savedId = store.get('playlist_id') || migrated;
+    let c = null;
+    if (savedId === LIB) { const { src, have } = await libCached(); if (have.size) c = { id: LIB, items: mergeLib(src.map(p => have.get(p.id)?.items).filter(Boolean)) }; }
+    else c = await readCache(savedId);
     if (c) { fillPlaylistSelect(list, c.id); curId = c.id; build(c.items); render(); }
     startPolling();
     // 2. Kolla mot Spotify i bakgrunden och hämta bara om spellistan ändrats

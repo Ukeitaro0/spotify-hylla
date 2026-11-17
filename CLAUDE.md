@@ -49,7 +49,8 @@ Genrer: Robin trycker ⚙︎ → Kopiera och klistrar in JSON i chatten → kör
 - Artister: rutnät med runda bilder (riktiga bilder hämtas en i taget, 0,7 s paus, cache 60 dagar), artistsida med Album / Låtar utanför album / Medverkar på. "Visa under artist" i ⋯-menyn flyttar en låt till en gästartist.
 - Spelare: minispelare + stor spelare (blanda, upprepa, spola, byt enhet). Senast spelat sparas och kan återupptas.
 - Enhetsval: telefon spelar på telefonens Spotify, dator på datorns. iPhone listar inte Spotify när appen sover → Hyllan öppnar `spotify:` och spelar när man kommer tillbaka.
-- Lagring: localStorage (`pl_cache_v1` spellistcache med snapshot_id, `own_genres_v1`, `artist_prefs_v1`, `artist_img_v1`, `last_played`, `my_device`, `side_closed`).
+- Bibliotek: valet "Årslistor 2012–2026" (`LIB = '__lib__'`) slår ihop alla listor som heter ett årtal ≥ 2012. Bara nya/ändrade listor (snapshot_id) läses, en sida i taget med paus, och det kan fortsätta nästa gång. Dubbletter mellan listor räknas en gång. "Ta bort ur spellistan" finns inte i biblioteket.
+- Lagring: spellistornas innehåll i IndexedDB (`hyllan` → `pl`, en post per lista med snapshot). Gamla `pl_cache_v1` flyttas dit automatiskt. Övrigt i localStorage ( `own_genres_v1`, `artist_prefs_v1`, `artist_img_v1`, `last_played`, `my_device`, `side_closed`).
 
 ## Beslut som är tagna
 - Mobil = flikar (förslag B), dator = sidomeny (D1). Gamla iTunes-kolumnbläddraren valdes bort.
@@ -62,4 +63,5 @@ Genrer: Robin trycker ⚙︎ → Kopiera och klistrar in JSON i chatten → kör
 - Stiliserad illustration per genre på genrerutorna.
 - CarPlay-genväg: Hyllan skapar/uppdaterar spellistor i Spotify per genre ("Hyllan · Country …") som används via Spotifys CarPlay.
 - Titta närmare på hur låtraderna ska se ut (Robin återkommer).
-- Hela biblioteket – kräver uttryckligt OK.
+- Hela biblioteket: steg 1 (årslistor) OK:at och byggt 2026-11-17. Robin går igenom genrer innan nästa steg. Nästa: genrelistorna (och frysboxen) som genreförslag, sedan artist-/albummappen. Topplistor/stämningslistor/Gillade låtar: inte nu.
+- Genre per artist som standard (förslag, inte påbörjat).

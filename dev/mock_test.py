@@ -22,6 +22,15 @@ for i, (typ, tot, c) in enumerate([("album", 12, "c96"), ("single", 3, "69c"), (
     for n in range(tot):
         ITEMS.append({"added_at": "2026-05-0%dT00:00:00Z" % (i + 1), "item": {"id": f"t{i}_{n}", "uri": f"spotify:track:t{i}_{n}", "name": f"Låt {n+1}",
             "type": "track", "duration_ms": 200000, "track_number": n + 1, "disc_number": 1, "album": a, "artists": a["artists"]}})
+# Fler listor för biblioteksläget: 2025 delar en låt med 2026 (ska räknas en gång), "Gubbrock" ska inte ingå.
+EXTRA = []
+for i, (typ, tot, c) in enumerate([("album", 6, "a5c"), ("single", 2, "5ac")], start=10):
+    a = alb(i, typ, tot, c)
+    for n in range(tot):
+        EXTRA.append({"added_at": "2025-03-01T00:00:00Z", "item": {"id": f"t{i}_{n}", "uri": f"spotify:track:t{i}_{n}", "name": f"Låt {n+1}",
+            "type": "track", "duration_ms": 200000, "track_number": n + 1, "disc_number": 1, "album": a, "artists": a["artists"]}})
+PL_ITEMS = {"pl": ITEMS, "pl25": EXTRA + [ITEMS[-1]], "gr": ITEMS[:3]}
+PLAYLISTS = [{"id": "pl", "name": "2026", "snapshot_id": "s1"}, {"id": "pl25", "name": "2025", "snapshot_id": "s1"}, {"id": "gr", "name": "Gubbrock", "snapshot_id": "s1"}]
 DEVICES = [{"id": "pc", "name": "Dator", "type": "Computer", "is_active": True, "is_restricted": False}]
 
 async def run(w, h, touch, prefix):
@@ -32,8 +41,9 @@ async def run(w, h, touch, prefix):
         pg.on("pageerror", lambda e: print("PAGEERR", e))
         async def route(r):
             u = r.request.url
-            if "/me/playlists" in u: body = {"items": [{"id": "pl", "name": "2026", "snapshot_id": "s1", "owner": {"id": "me"}, "items": {"total": len(ITEMS)}}], "next": None}
-            elif "/playlists/pl/items" in u: body = {"items": ITEMS, "next": None, "total": len(ITEMS)}
+            if "/me/playlists" in u: body = {"items": [{**p, "owner": {"id": "me"}, "items": {"total": len(PL_ITEMS[p["id"]])}} for p in PLAYLISTS], "next": None}
+            elif "/items" in u and "/playlists/" in u:
+                its = PL_ITEMS[u.split("/playlists/")[1].split("/")[0]]; body = {"items": its, "next": None, "total": len(its)}
             elif "/me/player/devices" in u: body = {"devices": DEVICES}
             elif "/me/player" in u and r.request.method == "GET": body = {"is_playing": True, "progress_ms": 60000, "device": DEVICES[0], "item": ITEMS[2]["item"]}
             elif u.endswith("/v1/me"): body = {"id": "me"}
@@ -57,6 +67,16 @@ async def run(w, h, touch, prefix):
         await pg.get_by_text("Tryck igen").click(); await pg.wait_for_timeout(300)
         await pg.screenshot(path=f"{OUT}/{prefix}-slang2.png")
         print(prefix, "kvar lokalt:", await pg.evaluate("localStorage.getItem('own_genres_v1')"))
+        await pg.evaluate("closeSheet()"); await pg.wait_for_timeout(400)
+        # Biblioteket: årslistorna som en
+        await pg.evaluate("pickPlaylist('__lib__')"); await pg.wait_for_timeout(2500)
+        print(prefix, "bibliotek:", await pg.evaluate("[plName(), tracks.length, albums.length, loose.length, curId]"))
+        await pg.screenshot(path=f"{OUT}/{prefix}-bibliotek.png")
+        await pg.evaluate("navigate({view:'playlists'})"); await pg.wait_for_timeout(300)
+        await pg.screenshot(path=f"{OUT}/{prefix}-spellistor.png")
+        # Omstart: ska visa biblioteket direkt från IndexedDB
+        await pg.reload(); await pg.wait_for_timeout(300)
+        print(prefix, "efter omstart:", await pg.evaluate("[curId, tracks.length, localStorage.getItem('pl_cache_v1')]"))
         await b.close()
 
 asyncio.run(run(390, 844, True, "mobil")); asyncio.run(run(1440, 900, False, "dator"))
