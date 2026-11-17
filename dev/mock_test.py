@@ -50,6 +50,13 @@ async def run(w, h, touch, prefix):
         await pg.screenshot(path=f"{OUT}/{prefix}-start.png")
         await pg.evaluate("navigate({view:'genres'})"); await pg.wait_for_timeout(300)
         await pg.screenshot(path=f"{OUT}/{prefix}-genrer.png")
+        await pg.evaluate("openSettings()"); await pg.wait_for_timeout(300)
+        btn = pg.get_by_text("Släng lokala ändringar")
+        await btn.scroll_into_view_if_needed(); await pg.screenshot(path=f"{OUT}/{prefix}-installningar.png")
+        await btn.click(); await pg.screenshot(path=f"{OUT}/{prefix}-slang1.png")
+        await pg.get_by_text("Tryck igen").click(); await pg.wait_for_timeout(300)
+        await pg.screenshot(path=f"{OUT}/{prefix}-slang2.png")
+        print(prefix, "kvar lokalt:", await pg.evaluate("localStorage.getItem('own_genres_v1')"))
         await b.close()
 
 asyncio.run(run(390, 844, True, "mobil")); asyncio.run(run(1440, 900, False, "dator"))

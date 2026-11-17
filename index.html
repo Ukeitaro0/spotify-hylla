@@ -475,7 +475,7 @@
 <script src="config.js"></script>
 <script>
 // ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
-const BUILD = '20261116-2215';
+const BUILD = '20261117-0912';
 (async () => {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
@@ -1633,9 +1633,10 @@ function openSettings() {
   box.appendChild(el('h3', null, 'Genrer'));
   setTimeout(() => box.appendChild(el('p', null, 'Version ' + BUILD)), 0);
   const n = Object.keys(exportGenres()).length, total = Object.values({ ...repoGenres, ...localGenres }).filter(v => { const o = norm(v); return o.main || o.subs.length; }).length;
-  box.appendChild(el('p', null, n
+  const info = el('p', null, n
     ? `${n} ändringar på den här enheten är inte uppladdade än (av ${total} album med genre). Kopiera och skicka dem till Claude. Ordningen mellan telefon och dator spelar ingen roll: det senast ändrade per album gäller.`
-    : `Allt är uppladdat. ${total} album har genre.`));
+    : `Allt är uppladdat. ${total} album har genre.`);
+  box.appendChild(info);
   const lab = el('label'); const cb = el('input'); cb.type = 'checkbox'; cb.checked = useLastfm;
   cb.onchange = () => { useLastfm = cb.checked; store.set('use_lastfm', useLastfm ? '1' : '0'); render(); };
   lab.appendChild(cb); lab.appendChild(el('span', null, 'Visa Last.fm-genrer på album utan egna'));
@@ -1648,6 +1649,21 @@ function openSettings() {
   cp.onclick = async () => { try { await navigator.clipboard.writeText(json); toast('Kopierat'); } catch { ta.select(); toast('Markera och kopiera texten nedan'); } };
   row.appendChild(dl); row.appendChild(cp); box.appendChild(row);
   const ta = el('textarea'); ta.readOnly = true; ta.value = json; box.appendChild(ta);
+  if (n) {
+    // Släng det som bara finns på den här enheten, så gäller genres.json. Två tryck för att undvika misstag.
+    const clr = el('button', null, 'Släng lokala ändringar'); clr.style.marginTop = '8px';
+    let armed = false;
+    clr.onclick = () => {
+      if (!armed) { armed = true; clr.textContent = `Tryck igen för att slänga ${n} ändringar`; setTimeout(() => { armed = false; clr.textContent = 'Släng lokala ändringar'; }, 4000); return; }
+      localGenres = {}; localArtistPrefs = {};
+      store.set('own_genres_v1', '{}'); store.set('artist_prefs_v1', '{}');
+      if (tracks.length) buildArtists();
+      info.textContent = 'Lokala ändringar slängda. Det som ligger i genres.json gäller.';
+      row.remove(); ta.remove(); clr.remove();
+      toast('Lokala ändringar slängda');
+    };
+    box.appendChild(clr);
+  }
   inner.appendChild(box);
   showSheet();
 }
