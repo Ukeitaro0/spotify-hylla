@@ -475,7 +475,7 @@
 <script src="config.js"></script>
 <script>
 // ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
-const BUILD = '20261117-0934';
+const BUILD = '20261117-1408';
 (async () => {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
@@ -574,20 +574,29 @@ async function getToken() {
 }
 
 // ===== API =====
-async function api(path, opts = {}) {
+function blockedErr() {
+  const min = Math.ceil((Number(store.get('blocked_until') || 0) - Date.now()) / 60000);
+  const e = new Error(`Spotify har pausat appen för många anrop. Försöker igen om ${min} min.`); e.status = 429; return e;
+}
+async function api(path, opts = {}, tries = 0) {
+  // Spärrad: fråga inte alls förrän tiden gått, annars förlängs spärren
+  if (Number(store.get('blocked_until') || 0) > Date.now()) throw blockedErr();
   const token = await getToken();
   if (!token) { showLogin(); throw new Error('Inte inloggad'); }
   const url = path.startsWith('http') ? path : 'https://api.spotify.com/v1' + path;
   const r = await fetch(url, { ...opts, headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', ...(opts.headers || {}) } });
   if (r.status === 429) {
-    // Kort väntan: försök igen. Lång spärr: sluta fråga, annars förlängs spärren.
-    const wait = Number(r.headers.get('Retry-After') || 2);
-    if (wait > 60) {
-      store.set('blocked_until', String(Date.now() + wait * 1000));
-      const e = new Error(`Spotify har pausat appen i ${Math.ceil(wait / 60)} min för för många anrop.`); e.status = 429; throw e;
-    }
-    await new Promise(res => setTimeout(res, wait * 1000)); return api(path, opts);
+    // Retry-After går oftast inte att läsa från webbläsaren (CORS). Okänd väntetid = pausa länge, aldrig loopa.
+    // Kort känd väntan: ett nytt försök. Annars: pausa allt mot Spotify, och dubbla pausen om det händer igen.
+    const ra = Number(r.headers.get('Retry-After')) || 0;
+    if (ra && ra <= 10 && tries < 1) { await new Promise(res => setTimeout(res, ra * 1000)); return api(path, opts, tries + 1); }
+    const prev = Number(store.get('block_len') || 0);
+    const len = ra > 10 ? ra : Math.min(prev ? prev * 2 : 600, 4 * 3600);
+    store.set('block_len', String(len));
+    store.set('blocked_until', String(Date.now() + len * 1000));
+    throw blockedErr();
   }
+  if (r.ok) store.del('block_len');
   if (r.status === 204) return null;
   const txt = await r.text();
   let j = null; try { j = txt ? JSON.parse(txt) : null; } catch {}
@@ -811,6 +820,7 @@ function wantArtistImg(id) {
   if (!/^[0-9A-Za-z]{22}$/.test(id || '')) return;
   const c = artistImg[id]; if (c && Date.now() - c.ts < 60 * 864e5) return;
   if (!imgQueue.includes(id)) imgQueue.push(id);
+  if (imgQueue.length > 24) imgQueue.splice(0, imgQueue.length - 24);   // bara de senast visade; resten tas när de syns igen
   setTimeout(pumpImg, 300);
 }
 async function pumpImg() {
@@ -823,7 +833,7 @@ async function pumpImg() {
       catch (e) { if (e.status === 429 || e.message === 'Inte inloggad') { imgQueue.length = 0; break; } artistImg[id] = { u: '', ts: Date.now() }; }
       store.set('artist_img_v1', JSON.stringify(artistImg));
       if (artistImg[id].u) document.querySelectorAll(`img[data-aid="${id}"]`).forEach(i => { i.src = artistImg[id].u; });
-      await new Promise(r => setTimeout(r, 700));
+      await new Promise(r => setTimeout(r, 1500));
     }
   } finally { imgBusy = false; }
 }
@@ -834,9 +844,10 @@ function avatarEl(e, { on = false, count = '', onClick } = {}) {
   const img = el('img'); img.alt = ''; img.loading = 'lazy'; img.dataset.aid = e.id; img.src = artistImgUrl(e);
   b.appendChild(img); b.appendChild(el('div', 'n', e.name)); if (count) b.appendChild(el('div', 'c', count));
   b.onclick = onClick || (() => goArtist(e.id));
-  wantArtistImg(e.id);
+  imgSeen.observe(img);                   // hämta bilden först när rutan syns på skärmen
   return b;
 }
+const imgSeen = new IntersectionObserver(es => es.forEach(x => { if (x.isIntersecting) { imgSeen.unobserve(x.target); wantArtistImg(x.target.dataset.aid); } }), { rootMargin: '200px' });
 function goArtist(id) { navigate({ view: 'artist', artist: id, tab: VIEW_TAB_OF(route) }); }
 
 // ===== Biblioteket: flera spellistor som en (just nu årslistorna 2012 och framåt) =====

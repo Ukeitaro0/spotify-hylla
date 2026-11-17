@@ -31,6 +31,8 @@ for i, (typ, tot, c) in enumerate([("album", 6, "a5c"), ("single", 2, "5ac")], s
             "type": "track", "duration_ms": 200000, "track_number": n + 1, "disc_number": 1, "album": a, "artists": a["artists"]}})
 PL_ITEMS = {"pl": ITEMS, "pl25": EXTRA + [ITEMS[-1]], "gr": ITEMS[:3]}
 PLAYLISTS = [{"id": "pl", "name": "2026", "snapshot_id": "s1"}, {"id": "pl25", "name": "2025", "snapshot_id": "s1"}, {"id": "gr", "name": "Gubbrock", "snapshot_id": "s1"}]
+CALLS = {"artists": 0, "all": 0}
+MODE = {"r429": False}
 DEVICES = [{"id": "pc", "name": "Dator", "type": "Computer", "is_active": True, "is_restricted": False}]
 
 async def run(w, h, touch, prefix):
@@ -41,6 +43,10 @@ async def run(w, h, touch, prefix):
         pg.on("pageerror", lambda e: print("PAGEERR", e))
         async def route(r):
             u = r.request.url
+            CALLS["all"] += 1
+            if MODE["r429"]:                       # Spotify spärrar, utan läsbar Retry-After (som i verkligheten via CORS)
+                if "/v1/artists/" in u: CALLS["artists"] += 1
+                return await r.fulfill(status=429, body="")
             if "/me/playlists" in u: body = {"items": [{**p, "owner": {"id": "me"}, "items": {"total": len(PL_ITEMS[p["id"]])}} for p in PLAYLISTS], "next": None}
             elif "/items" in u and "/playlists/" in u:
                 its = PL_ITEMS[u.split("/playlists/")[1].split("/")[0]]; body = {"items": its, "next": None, "total": len(its)}
@@ -76,6 +82,14 @@ async def run(w, h, touch, prefix):
         await pg.screenshot(path=f"{OUT}/{prefix}-spellistor.png")
         # Omstart: ska visa biblioteket direkt från IndexedDB
         await pg.reload(); await pg.wait_for_timeout(300)
+        # 429-skydd: när Spotify spärrar ska appen sluta fråga helt, inte loopa
+        await pg.evaluate("localStorage.removeItem('artist_img_v1'); localStorage.removeItem('blocked_until'); localStorage.removeItem('block_len')")
+        MODE["r429"] = True; CALLS["all"] = 0
+        await pg.evaluate("navigate({view:'artists'})"); await pg.wait_for_timeout(8000)
+        print(prefix, "429-test: anrop under 8 s =", CALLS["all"], "| spärrad min =", await pg.evaluate("Math.round((+localStorage.getItem('blocked_until')-Date.now())/60000)"))
+        await pg.screenshot(path=f"{OUT}/{prefix}-sparr.png")
+        MODE["r429"] = False
+        await pg.evaluate("localStorage.removeItem('blocked_until')")
         print(prefix, "efter omstart:", await pg.evaluate("[curId, tracks.length, localStorage.getItem('pl_cache_v1')]"))
         await b.close()
 

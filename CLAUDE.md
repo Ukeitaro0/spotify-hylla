@@ -37,7 +37,8 @@ Genrer: Robin trycker ⚙︎ → Kopiera och klistrar in JSON i chatten → kör
 - Spellisteinnehåll bara för listor man äger/samarbetar på: `GET /playlists/{id}/items` (fältet heter `item`, inte `track`).
 - Borttagna endpoints bl.a. `GET /artists` (flera), `GET /albums`, `GET /tracks`. `GET /artists/{id}` (en) finns kvar.
 - Artistgenrer från Spotify är i praktiken tomma → egna genrer + Last.fm-förslag.
-- 429 med Retry-After > 60 s → appen slutar fråga (`blocked_until`). Långa spärrar har rapporterats (~19 h).
+- 429: Retry-After går oftast INTE att läsa i webbläsaren (CORS). Därför: okänd väntetid = pausa ALLA Spotify-anrop 10 min (`blocked_until`), dubblas vid upprepning (max 4 h, `block_len`). `api()` frågar inte alls under spärr. Fram till 20261117 loopade appen var 2:a sekund på 429 (tusentals anrop) – får aldrig hända igen. Långa spärrar har rapporterats (~19 h).
+- Artistbilder hämtas bara för rutor som syns (IntersectionObserver), max 24 i kö, 1,5 s paus.
 - Scopes: playlist-read-private, playlist-read-collaborative, playlist-modify-private/public, user-read-playback-state, user-modify-playback-state. Nya scopes kräver att Robin loggar in igen.
 - Client ID `60281313632147df82bb02cdd1691929`, redirect `https://ukeitaro0.github.io/spotify-hylla/` (PKCE, ingen secret).
 
