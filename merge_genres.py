@@ -8,6 +8,14 @@ for k, v in src.items():
     if isinstance(v, list): v = {"main": v[0] if v else "", "subs": v[1:], "t": 0}
     old = cur.get(k)
     if old and old.get('t', 0) > v.get('t', 0): skipped += 1; continue
+    if k.startswith('rate:'):                        # betyg 1–5 för album eller låt; 0 = ta bort
+        if not v.get('r'):
+            if k in cur: del cur[k]; removed += 1
+            continue
+        if old is None: added += 1
+        elif old.get('r') != v['r']: changed += 1
+        cur[k] = {"r": v['r'], "t": v.get('t', 0)}
+        continue
     if k.startswith('artist:'):                      # "visa under artist" för en låt
         if not v.get('artist'):
             if k in cur: del cur[k]; removed += 1

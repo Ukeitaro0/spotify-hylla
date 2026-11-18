@@ -79,6 +79,17 @@
   .toolbar .r { display: flex; gap: 8px; }
   .trk .gtag { color: var(--accent); }
   .trk .dup { color: #f5b14c; }
+  .stars { display: inline-flex; align-items: center; gap: 1px; flex: none; }
+  .stars svg { width: 12px; height: 12px; display: block; }
+  .stars .on { fill: var(--accent); } .stars .off { fill: rgba(255,255,255,.18); }
+  .stars.inh .on { opacity: .45; }
+  .stars button { border: none; background: transparent; padding: 0; display: flex; align-items: center; justify-content: center; }
+  .stars.big button { width: 40px; height: 44px; } .stars.big svg { width: 28px; height: 28px; }
+  .stars.mid button { width: 24px; height: 34px; } .stars.mid svg { width: 15px; height: 15px; }
+  .card .stars { margin-top: 3px; }
+  .ratebox { display: flex; flex-direction: column; align-items: center; margin: 2px 0 6px; }
+  .ratebox .h { font-size: 12px; color: var(--muted); }
+  select.on { color: var(--accent); border-color: var(--accent); }
   .trk .more { flex: none; width: 34px; height: 34px; padding: 0; border: none; background: transparent; color: var(--muted); font-size: 20px; line-height: 1; border-radius: 50%; }
   .trk .more:active { background: rgba(255,255,255,.08); }
   .mhead { display: flex; gap: 14px; align-items: center; margin: 4px 0 16px; }
@@ -475,7 +486,7 @@
 <script src="config.js"></script>
 <script>
 // ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
-const BUILD = '20261117-1408';
+const BUILD = '20261118-1511';
 (async () => {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
@@ -671,13 +682,24 @@ function exportGenres() {
   const out = {};
   Object.keys(localGenres).forEach(id => { const o = norm(localGenres[id]); out[id] = { main: o.main, subs: o.subs, t: o.t || Date.now() }; });
   Object.keys(localArtistPrefs).forEach(uri => { const p = localArtistPrefs[uri]; out['artist:' + uri] = { artist: p.id ? { id: p.id, name: p.name } : null, t: p.t || Date.now() }; });
+  Object.keys(localRatings).forEach(k => { const v = localRatings[k]; out['rate:' + k] = { r: v.r || 0, t: v.t || Date.now() }; });
   return out;
 }
 const sameGenre = (a, b) => a && b && a.main === b.main && JSON.stringify(a.subs) === JSON.stringify(b.subs);
 async function loadRepoGenres() {
   try { const r = await fetch('genres.json', { cache: 'no-store' }); if (r.ok) repoGenres = await r.json() || {}; } catch { return; }
   repoArtistPrefs = {};
-  Object.keys(repoGenres).forEach(k => { if (k.startsWith('artist:')) { const v = repoGenres[k]; if (v.artist) repoArtistPrefs[k.slice(7)] = { ...v.artist, t: v.t || 0 }; delete repoGenres[k]; } });
+  repoRatings = {};
+  Object.keys(repoGenres).forEach(k => {
+    if (k.startsWith('artist:')) { const v = repoGenres[k]; if (v.artist) repoArtistPrefs[k.slice(7)] = { ...v.artist, t: v.t || 0 }; delete repoGenres[k]; }
+    else if (k.startsWith('rate:')) { const v = repoGenres[k]; if (v.r) repoRatings[k.slice(5)] = { r: v.r, t: v.t || 0 }; delete repoGenres[k]; }
+  });
+  let ch3 = false;
+  Object.keys(localRatings).forEach(k => {
+    const l = localRatings[k], r = repoRatings[k];
+    if ((r && r.r === l.r) || (!r && !l.r) || (r && (r.t || 0) >= (l.t || 0))) { delete localRatings[k]; ch3 = true; }
+  });
+  if (ch3) store.set('ratings_v1', JSON.stringify(localRatings));
   let ch2 = false;
   Object.keys(localArtistPrefs).forEach(uri => {
     const l = localArtistPrefs[uri], r = repoArtistPrefs[uri];
@@ -797,6 +819,43 @@ function setArtistPref(uri, artist) {
   store.set('artist_prefs_v1', JSON.stringify(localArtistPrefs));
   buildArtists();
 }
+// ===== Betyg 1–5 =====
+// Per album-id och per låt-uri. En låt utan eget betyg ärver albumets. Synkas via genres.json som "rate:<id>" (r = 0: borttaget).
+let localRatings = {}, repoRatings = {};
+try { localRatings = JSON.parse(store.get('ratings_v1') || '{}'); } catch {}
+let minRate = 0;                          // filtret gäller bara den här stunden, sparas inte
+const rateOf = k => (localRatings[k] ?? repoRatings[k])?.r || 0;
+const albumRating = id => rateOf(id);
+const trackRating = t => rateOf(t.uri) || albumRating(t.album.id);
+function setRating(k, r) { localRatings[k] = { r, t: Date.now() }; store.set('ratings_v1', JSON.stringify(localRatings)); }
+const okAlbum = a => !minRate || albumRating(a.id) >= minRate;
+const okTrack = t => !minRate || trackRating(t) >= minRate;
+const STAR = '<path d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.3l-5.8 3.1 1.2-6.5L2.6 9.4l6.5-.8z"/>';
+const starSvg = on => `<svg viewBox="0 0 24 24" class="${on ? 'on' : 'off'}" aria-hidden="true">${STAR}</svg>`;
+function starsEl(n, inherited) {          // visning: bara när det finns betyg
+  const sp = el('span', 'stars' + (inherited ? ' inh' : '')); sp.title = n + ' av 5' + (inherited ? ' (från albumet)' : '');
+  sp.innerHTML = [1, 2, 3, 4, 5].map(i => starSvg(i <= n)).join(''); return sp;
+}
+// Inmatning: tryck på en stjärna = det betyget, tryck på samma igen = ta bort. get() ger [betyg, ärvt?].
+function rateInput(get, set, size, onChange) {
+  const sp = el('span', 'stars ' + size);
+  const paint = () => {
+    const [n, inh] = get(); sp.classList.toggle('inh', !!inh); sp.innerHTML = '';
+    [1, 2, 3, 4, 5].forEach(i => {
+      const b = el('button'); b.innerHTML = starSvg(i <= n); b.setAttribute('aria-label', `${i} av 5`);
+      b.onclick = e => { e.stopPropagation(); const [cur, ih] = get(); set(cur === i && !ih ? 0 : i); paint(); onChange && onChange(); };
+      sp.appendChild(b);
+    });
+  };
+  paint(); sp.repaint = paint; return sp;
+}
+function rateSelect() {
+  const s = el('select', minRate ? 'on' : ''); s.setAttribute('aria-label', 'Betyg');
+  [[0, 'Alla betyg'], [3, '★ 3+'], [4, '★ 4+'], [5, '★ 5']].forEach(([v, l]) => { const o = el('option', null, l); o.value = v; s.appendChild(o); });
+  s.value = minRate; s.onchange = () => { minRate = +s.value; renderMain(); };
+  return s;
+}
+
 let artistMap = new Map();
 function buildArtists() {
   artistMap = new Map();
@@ -995,6 +1054,7 @@ function sortAlbums(list) {
     s === 'playlist' ? (plIndex.get(a.items[0].t.uri) ?? 0) - (plIndex.get(b.items[0].t.uri) ?? 0) :
     s === 'name' ? c(sortKey(a.name), sortKey(b.name)) :
     s === 'genre' ? c(firstGenre(a), firstGenre(b)) || c(sortKey(a.artist), sortKey(b.artist)) :
+    s === 'rating' ? albumRating(b.id) - albumRating(a.id) || c(sortKey(a.artist), sortKey(b.artist)) :
     c(sortKey(a.artist), sortKey(b.artist)) || (a.date || '').localeCompare(b.date || ''));
 }
 
@@ -1003,12 +1063,13 @@ function albumCard(a) {
   const img = el('img'); img.loading = 'lazy'; img.alt = ''; img.src = a.img; c.appendChild(img);
   c.appendChild(el('div', 't', a.name));
   c.appendChild(el('div', 's', a.artist + (a.date ? ' · ' + year(a.date) : '')));
+  const ar = albumRating(a.id); if (ar) c.appendChild(starsEl(ar));
   if (selecting) { c.appendChild(el('div', 'chk', selected.has(a.id) ? '✓' : '')); if (selected.has(a.id)) c.classList.add('sel'); }
   c.onclick = () => selecting ? toggleSel(a.id) : openAlbum(a);
   return c;
 }
 
-function trackRow(t, { num, onPlay, showCover = true, showGenre = false, menu = false }) {
+function trackRow(t, { num, onPlay, showCover = true, showGenre = false, menu = false, rateable = false }) {
   const r = el('div', 'trk'); r.dataset.uri = t.uri;
   const selectable = selecting && showGenre;
   if (selectable) { const on = selected.has(t.uri); r.appendChild(el('div', 'chk', on ? '✓' : '')); if (on) r.classList.add('sel'); }
@@ -1023,6 +1084,8 @@ function trackRow(t, { num, onPlay, showCover = true, showGenre = false, menu = 
   }
   m.appendChild(sub);
   r.appendChild(m);
+  if (rateable) r.appendChild(r.rate = rateInput(() => [trackRating(t), !rateOf(t.uri)], v => setRating(t.uri, v), 'mid'));
+  else { const tr = trackRating(t); if (tr) r.appendChild(starsEl(tr, !rateOf(t.uri))); }
   r.appendChild(el('div', 'd', fmtDur(t.duration_ms)));
   if (menu && !selectable) {
     const mb = el('button', 'more', '⋯'); mb.title = 'Mer';
@@ -1188,7 +1251,7 @@ function vhead(main, { title, sub, back, actions = [], big = false, crumbs = [] 
   main.appendChild(h);
 }
 function sortSelect(forTracks) {
-  const opts = [['artist', 'Artist A–Ö'], ['playlist', 'Spellistans ordning'], ['date', 'Utgivning'], ['added', 'Senast tillagd'], ['name', forTracks ? 'Låttitel A–Ö' : 'Album A–Ö'], ['genre', 'Genre']];
+  const opts = [['artist', 'Artist A–Ö'], ['playlist', 'Spellistans ordning'], ['date', 'Utgivning'], ['added', 'Senast tillagd'], ['name', forTracks ? 'Låttitel A–Ö' : 'Album A–Ö'], ['genre', 'Genre'], ['rating', 'Betyg']];
   const s = el('select'); s.setAttribute('aria-label', 'Sortering');
   opts.forEach(([v, l]) => { const o = el('option', null, l); o.value = v; s.appendChild(o); });
   s.value = sortVal; s.onchange = () => { sortVal = s.value; store.set('sort', sortVal); renderMain(); };
@@ -1216,7 +1279,7 @@ function renderMain() {
   if (v === 'genre') return viewGenre(main);
   if (v === 'artist') return viewArtist(main);
   const titles = { albums: 'Album', artists: 'Artister', tracks: 'Låtar', loose: 'Övriga låtar' };
-  vhead(main, { title: titles[v], sub: plName(), back: libBack(), actions: [v !== 'artists' ? sortSelect(v !== 'albums') : null] });
+  vhead(main, { title: titles[v], sub: plName(), back: libBack(), actions: [v !== 'artists' ? rateSelect() : null, v !== 'artists' ? sortSelect(v !== 'albums') : null] });
   if (v === 'albums') listAlbums(main);
   if (v === 'artists') listArtists(main);
   if (v === 'tracks' || v === 'loose') listTracks(main, v === 'loose');
@@ -1260,7 +1323,7 @@ function viewGenre(main) {
   if (route.sub || aE) crumbs.push([gName, { view: 'genre', genre: g }]);
   if (route.sub && aE) crumbs.push([route.sub, { view: 'genre', genre: g, sub: route.sub }]);
   const title = aE ? aE.name : (route.sub || gName);
-  vhead(main, { title, crumbs, sub: plName(), back: isDesk() ? null : { label: 'Genrer', route: { view: 'genres' } }, actions: [sortSelect(genreMode !== 'albums')] });
+  vhead(main, { title, crumbs, sub: plName(), back: isDesk() ? null : { label: 'Genrer', route: { view: 'genres' } }, actions: [rateSelect(), sortSelect(genreMode !== 'albums')] });
   if (st && st.subs.size) {
     const chips = el('div', 'gchips');
     const add = (label, on, r, c) => { const b = el('button', 'chip' + (on ? ' on' : ''), label); if (c != null) b.appendChild(el('span', 'c', String(c))); b.onclick = () => navigate(r, false); chips.appendChild(b); };
@@ -1276,8 +1339,8 @@ function viewGenre(main) {
   });
   main.appendChild(seg);
   if (genreMode === 'albums') {
-    const nAlb = albums.filter(x => matchesGenre(x.id) && matchesArtistAlbum(x)).length;
-    const ls = tracks.filter(x => matchesGenre(x.t.album.id) && (looseUris.has(x.t.uri) || (artistFilter && ownerOf(x.t).id === artistFilter && albumArtist(x.t.album).id !== artistFilter)) && matchesArtistTrack(x.t));
+    const nAlb = albums.filter(x => matchesGenre(x.id) && matchesArtistAlbum(x) && okAlbum(x)).length;
+    const ls = tracks.filter(x => matchesGenre(x.t.album.id) && okTrack(x.t) && (looseUris.has(x.t.uri) || (artistFilter && ownerOf(x.t).id === artistFilter && albumArtist(x.t.album).id !== artistFilter)) && matchesArtistTrack(x.t));
     if (nAlb || !ls.length) listAlbums(main);
     if (ls.length) {
       main.appendChild(el('div', 'sect', nAlb ? 'Lösa låtar' : 'Låtar'));
@@ -1326,7 +1389,7 @@ function renderSearchResults(res) {
 
 // --- Listor (används av både biblioteket och genrevyn)
 function listAlbums(main) {
-  const list = sortAlbums(albums.filter(a => matchesGenre(a.id) && matchesArtistAlbum(a)));
+  const list = sortAlbums(albums.filter(a => matchesGenre(a.id) && matchesArtistAlbum(a) && okAlbum(a)));
   main.appendChild(toolbar(list.length + ' album', list.map(a => a.id)));
   if (!list.length) return main.appendChild(el('div', 'center', 'Inga album här.'));
   if (sortVal === 'genre' && route.view !== 'genre') {
@@ -1421,12 +1484,13 @@ function listTracks(main, isLoose) {
   const source = isLoose ? loose : tracks;
   const byArtist = (a, b) => sortKey(artistNames(a.t.artists)).localeCompare(sortKey(artistNames(b.t.artists)), 'sv')
     || sortKey(a.t.album.name).localeCompare(sortKey(b.t.album.name), 'sv') || (a.t.disc_number - b.t.disc_number) || (a.t.track_number - b.t.track_number);
-  const list = source.filter(x => matchesGenre(x.t.album.id) && matchesArtistTrack(x.t) && (!isLoose || !dupOnly || isDup(x.t))).sort((a, b) =>
+  const list = source.filter(x => matchesGenre(x.t.album.id) && matchesArtistTrack(x.t) && okTrack(x.t) && (!isLoose || !dupOnly || isDup(x.t))).sort((a, b) =>
     s === 'added' ? (b.added || '').localeCompare(a.added || '') :
     s === 'date' ? (b.t.album.release_date || '').localeCompare(a.t.album.release_date || '') || byArtist(a, b) :
     s === 'name' ? sortKey(a.t.name).localeCompare(sortKey(b.t.name), 'sv') :
     s === 'playlist' ? (plIndex.get(a.t.uri) ?? 0) - (plIndex.get(b.t.uri) ?? 0) :
     s === 'genre' ? (infoFor(a.t.album.id).main || '~').localeCompare(infoFor(b.t.album.id).main || '~', 'sv') || byArtist(a, b) :
+    s === 'rating' ? trackRating(b.t) - trackRating(a.t) || byArtist(a, b) :
     byArtist(a, b));
   const uris = list.map(x => x.t.uri);
   const playBtn = el('button', 'primary', '▶  Spela alla');
@@ -1503,6 +1567,12 @@ function openTrackMenu(t) {
   if (alb) { const ab = el('button', null, 'Visa albumet'); ab.onclick = () => openAlbum(alb); act.appendChild(ab); }
   inner.appendChild(act);
 
+  const rbox = el('div', 'settings'); rbox.appendChild(el('h3', null, 'Betyg'));
+  const rnote = el('div', 'gscope');
+  const paintNote = () => { rnote.textContent = rateOf(t.uri) ? 'Låtens eget betyg. Tryck på samma stjärna igen för att ärva albumets.'
+    : albumRating(t.album.id) ? `Ärver albumets betyg (${albumRating(t.album.id)}) tills du sätter ett eget.` : ''; };
+  rbox.appendChild(rateInput(() => [trackRating(t), !rateOf(t.uri)], v => setRating(t.uri, v), 'big', paintNote));
+  paintNote(); rbox.appendChild(rnote); inner.appendChild(rbox);
   const box = el('div', 'settings'); box.appendChild(el('h3', null, 'Genre')); inner.appendChild(box);
   const siblings = tracks.filter(x => x.t.album.id === t.album.id).length;
   if (siblings > 1) inner.appendChild(el('div', 'gscope', `Gäller hela albumet ”${t.album.name}” (${siblings} låtar i listan).`));
@@ -1660,6 +1730,10 @@ function openAlbum(a) {
   aLink.onclick = () => { closeSheet(); setTimeout(() => goArtist(aid), 350); };
   sLine.appendChild(aLink); sLine.appendChild(document.createTextNode((a.date ? ' · ' + year(a.date) : '') + ' · ' + a.items.length + ' låtar'));
   hero.appendChild(sLine);
+  const rows = [];
+  const rb = el('div', 'ratebox');
+  rb.appendChild(rateInput(() => [albumRating(a.id)], v => setRating(a.id, v), 'big', () => rows.forEach(x => x.rate && x.rate.repaint())));
+  hero.appendChild(rb);
   const gBox = el('div', 'g'); hero.appendChild(gBox);
   const pb = el('button', 'primary', '▶  Spela'); pb.onclick = () => play({ context_uri: a.uri }, a.uri);
   hero.appendChild(pb);
@@ -1676,8 +1750,8 @@ function openAlbum(a) {
   eb.onclick = () => { editor.hidden = !editor.hidden; eb.textContent = editor.hidden ? '✎ Ändra genrer' : '✓ Klar'; };
   paintGenres();
   const l = el('div', 'list');
-  a.items.forEach(x => l.appendChild(trackRow(x.t, { num: x.t.track_number, showCover: false,
-    onPlay: () => play({ context_uri: a.uri, offset: { uri: x.t.uri } }, x.t.uri) })));
+  a.items.forEach(x => { const row = trackRow(x.t, { num: x.t.track_number, showCover: false, rateable: true,
+    onPlay: () => play({ context_uri: a.uri, offset: { uri: x.t.uri } }, x.t.uri) }); rows.push(row); l.appendChild(row); });
   inner.appendChild(l);
   showSheet();
 }
@@ -1740,8 +1814,8 @@ function openSettings() {
     let armed = false;
     clr.onclick = () => {
       if (!armed) { armed = true; clr.textContent = `Tryck igen för att slänga ${n} ändringar`; setTimeout(() => { armed = false; clr.textContent = 'Släng lokala ändringar'; }, 4000); return; }
-      localGenres = {}; localArtistPrefs = {};
-      store.set('own_genres_v1', '{}'); store.set('artist_prefs_v1', '{}');
+      localGenres = {}; localArtistPrefs = {}; localRatings = {};
+      store.set('own_genres_v1', '{}'); store.set('artist_prefs_v1', '{}'); store.set('ratings_v1', '{}');
       if (tracks.length) buildArtists();
       info.textContent = 'Lokala ändringar slängda. Det som ligger i genres.json gäller.';
       row.remove(); ta.remove(); clr.remove();

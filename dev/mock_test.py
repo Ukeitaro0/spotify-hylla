@@ -82,6 +82,21 @@ async def run(w, h, touch, prefix):
         await pg.screenshot(path=f"{OUT}/{prefix}-spellistor.png")
         # Omstart: ska visa biblioteket direkt från IndexedDB
         await pg.reload(); await pg.wait_for_timeout(300)
+        # Betyg: albumet 5, en låt 3, filter ★5
+        await pg.evaluate("navigate({view:'albums'})"); await pg.wait_for_timeout(300)
+        await pg.evaluate("openAlbum(albums.find(a=>a.id==='al0'))"); await pg.wait_for_timeout(400)
+        await pg.locator('.ratebox .stars button').nth(4).click()
+        await pg.locator('#sheetInner .trk .stars button').nth(2).click()
+        await pg.screenshot(path=f"{OUT}/{prefix}-betyg-album.png")
+        await pg.evaluate("closeSheet()"); await pg.wait_for_timeout(400)
+        await pg.evaluate("openTrackMenu(tracks.find(x=>x.t.album.id==='al0').t)"); await pg.wait_for_timeout(300)
+        await pg.screenshot(path=f"{OUT}/{prefix}-betyg-meny.png")
+        await pg.evaluate("closeSheet()"); await pg.wait_for_timeout(400)
+        await pg.evaluate("minRate=5; navigate({view:'tracks'})"); await pg.wait_for_timeout(300)
+        await pg.screenshot(path=f"{OUT}/{prefix}-betyg-filter.png")
+        print(prefix, "betyg:", await pg.evaluate("[albums.filter(okAlbum).length, tracks.filter(x=>okTrack(x.t)).length, Object.keys(exportGenres()).filter(k=>k.startsWith('rate:'))]"))
+        await pg.evaluate("minRate=0; navigate({view:'albums'})"); await pg.wait_for_timeout(300)
+        await pg.screenshot(path=f"{OUT}/{prefix}-betyg-rutnat.png")
         # 429-skydd: när Spotify spärrar ska appen sluta fråga helt, inte loopa
         await pg.evaluate("localStorage.removeItem('artist_img_v1'); localStorage.removeItem('blocked_until'); localStorage.removeItem('block_len')")
         MODE["r429"] = True; CALLS["all"] = 0
