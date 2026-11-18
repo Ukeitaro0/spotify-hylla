@@ -366,6 +366,8 @@
   .selbar { bottom: calc(70px + env(safe-area-inset-bottom)); }
   body.has-player .selbar { bottom: calc(176px + env(safe-area-inset-bottom)); }
   body.has-player .toast { bottom: calc(184px + env(safe-area-inset-bottom)); }
+  /* Mobil: minispelaren ligger ovanför flikraden, så sista raderna i ett utdraget fönster måste kunna scrollas fram ovanför den */
+  @media (max-width: 899px) { body.has-player .panel .scroll { padding-bottom: calc(220px + env(safe-area-inset-bottom)); } }
   body.nologin .tabbar, body.nologin .side { display: none !important; }
 
   .side { display: none; }
@@ -488,7 +490,7 @@
 <script src="config.js"></script>
 <script>
 // ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
-const BUILD = '20261118-1546';
+const BUILD = '20261118-1555';
 (async () => {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });

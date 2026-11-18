@@ -101,6 +101,8 @@ async def run(w, h, touch, prefix):
         await pg.evaluate("setOwn('al0',{main:'Country',subs:['Americana']}); navigate({view:'albums'})"); await pg.wait_for_timeout(300)
         await pg.evaluate("openAlbum(albums.find(a=>a.id==='al0'))"); await pg.wait_for_timeout(400)
         await pg.screenshot(path=f"{OUT}/{prefix}-genrelank-album.png")
+        await pg.evaluate("document.getElementById('sheetInner').scrollTop = 1e6"); await pg.wait_for_timeout(300)
+        await pg.screenshot(path=f"{OUT}/{prefix}-album-botten.png")
         await pg.locator('.hero .g .gl', has_text='Americana').click(); await pg.wait_for_timeout(900)
         print(prefix, "genrelänk album:", await pg.evaluate("[route.view, route.genre, route.sub, sheetOpen]"))
         await pg.evaluate("openFull()"); await pg.wait_for_timeout(400)
