@@ -63,6 +63,10 @@ Genrer: Robin trycker ⚙︎ → Kopiera och klistrar in JSON i chatten → kör
 - Riktig iOS-app/egen CarPlay: inte värt det nu (kräver Mac + Apple-konto ~1 100 kr/år, CarPlay-behörighet osäker).
 
 ## Idéer på listan (inte påbörjade)
+- **NÄSTA (beslutat 2026-11-18): Lägen i stället för betyg.** Stjärnbetygen ska BORT (Robin har godkänt). Tre lägen per LÅT (inte album), högst ett åt gången: **Nu** (favorit just nu), **All time**, **Arkivet** (var favorit, vilar). Lagras i tre Spotify-spellistor som Robin skapar själv; Hyllan flyttar låten mellan dem (lägg till i ny, ta bort ur gammal). Ingen Kopiera-export behövs. Knapp i stora spelaren, liten markering på låtrader (Nu/All time, inte Arkivet), tre rader överst i Bibliotek. Förslag (aldrig automatiskt): låt i Nu > X månader → föreslå Arkivet. Behöver listornas namn från Robin.
+- Total speltid per album (t.ex. under spåren / i rubriken).
+- År: `release_date` finns (sortering "Utgivning" finns redan). Ev. filter per årtionde. Obs: remaster-utgåvor har ofta remasterns år.
+- Sök i hela Spotify (`GET /search`, kolla gränser i Development Mode), t.ex. för att lägga till nytt i en lista.
 - Stiliserad illustration per genre på genrerutorna.
 - CarPlay-genväg: Hyllan skapar/uppdaterar spellistor i Spotify per genre ("Hyllan · Country …") som används via Spotifys CarPlay.
 - Titta närmare på hur låtraderna ska se ut (Robin återkommer).
