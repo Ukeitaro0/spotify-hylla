@@ -52,6 +52,7 @@ Genrer: Robin trycker ⚙︎ → Kopiera och klistrar in JSON i chatten → kör
 - Enhetsval: telefon spelar på telefonens Spotify, dator på datorns. iPhone listar inte Spotify när appen sover → Hyllan öppnar `spotify:` och spelar när man kommer tillbaka.
 - Bibliotek: valet "Årslistor 2012–2026" (`LIB = '__lib__'`) slår ihop alla listor som heter ett årtal ≥ 2012. Bara nya/ändrade listor (snapshot_id) läses, en sida i taget med paus, och det kan fortsätta nästa gång. Dubbletter mellan listor räknas en gång. "Ta bort ur spellistan" finns inte i biblioteket.
 - Betyg 1–5 (stjärnor): per album-id och per låt-uri, låt utan eget ärver albumets, eget låtbetyg gäller. Synkas i `genres.json` som `"rate:<albumId|trackUri>": {"r","t"}` (r 0 = ta bort), samma Kopiera-flöde. Sätts i albumvyn (albumet + klickbara stjärnor per låt) och i ⋯-menyn. Filter "Alla betyg / ★3+ / ★4+ / ★5" (minst, sparas inte) bredvid sorteringen, plus sortering "Betyg". localStorage `ratings_v1`.
+- Genreetiketter i albumvyn och stora spelaren är knappar (egna genrer, med ›) till genre-/subgenresidan i det som är valt nu. Last.fm-förslag är bara text. (Robin utvärderar, nov 2026.)
 - Lagring: spellistornas innehåll i IndexedDB (`hyllan` → `pl`, en post per lista med snapshot). Gamla `pl_cache_v1` flyttas dit automatiskt. Övrigt i localStorage ( `own_genres_v1`, `artist_prefs_v1`, `artist_img_v1`, `last_played`, `my_device`, `side_closed`).
 
 ## Beslut som är tagna

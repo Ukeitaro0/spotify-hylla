@@ -97,6 +97,17 @@ async def run(w, h, touch, prefix):
         print(prefix, "betyg:", await pg.evaluate("[albums.filter(okAlbum).length, tracks.filter(x=>okTrack(x.t)).length, Object.keys(exportGenres()).filter(k=>k.startsWith('rate:'))]"))
         await pg.evaluate("minRate=0; navigate({view:'albums'})"); await pg.wait_for_timeout(300)
         await pg.screenshot(path=f"{OUT}/{prefix}-betyg-rutnat.png")
+        # Genreetiketter går till genresidan (albumvy och stora spelaren)
+        await pg.evaluate("setOwn('al0',{main:'Country',subs:['Americana']}); navigate({view:'albums'})"); await pg.wait_for_timeout(300)
+        await pg.evaluate("openAlbum(albums.find(a=>a.id==='al0'))"); await pg.wait_for_timeout(400)
+        await pg.screenshot(path=f"{OUT}/{prefix}-genrelank-album.png")
+        await pg.locator('.hero .g .gl', has_text='Americana').click(); await pg.wait_for_timeout(900)
+        print(prefix, "genrelänk album:", await pg.evaluate("[route.view, route.genre, route.sub, sheetOpen]"))
+        await pg.evaluate("openFull()"); await pg.wait_for_timeout(400)
+        await pg.screenshot(path=f"{OUT}/{prefix}-genrelank-spelare.png")
+        await pg.locator('#fGenres .gl', has_text='Country').click(); await pg.wait_for_timeout(900)
+        print(prefix, "genrelänk spelare:", await pg.evaluate("[route.view, route.genre, route.sub || null, fullOpen]"))
+        await pg.screenshot(path=f"{OUT}/{prefix}-genrelank-efter.png")
         # 429-skydd: när Spotify spärrar ska appen sluta fråga helt, inte loopa
         await pg.evaluate("localStorage.removeItem('artist_img_v1'); localStorage.removeItem('blocked_until'); localStorage.removeItem('block_len')")
         MODE["r429"] = True; CALLS["all"] = 0

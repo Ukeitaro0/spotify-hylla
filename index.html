@@ -176,9 +176,11 @@
   .settings label { display: flex; gap: 10px; align-items: center; font-size: 15px; margin-bottom: 18px; cursor: pointer; }
   .settings input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
   .settings textarea { width: 100%; height: 120px; font: 12px ui-monospace, monospace; color: var(--text); background: var(--panel2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px; }
-  .hero .g span.main { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .hero .g .gl, .fullp .fg .gl { border: none; font: inherit; cursor: pointer; }
+  .hero .g .gl::after, .fullp .fg .gl::after { content: ' ›'; opacity: .6; }
+  .hero .g span.main, .hero .g .gl.main { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
   .hero .g span.src { background: transparent; font-style: italic; }
-  .hero .g span { font-size: 12px; padding: 4px 10px; border-radius: var(--r-pill); background: rgba(255,255,255,.08); color: var(--muted); }
+  .hero .g span, .hero .g .gl { font-size: 12px; padding: 4px 10px; border-radius: var(--r-pill); background: rgba(255,255,255,.08); color: var(--muted); }
 
 
   /* Spelare */
@@ -211,7 +213,7 @@
   .fullp .fs { cursor: pointer; }
   .fullp .fa { font-size: 13px; color: rgba(255,255,255,.5); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
   .fullp .fg { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; min-height: 0; }
-  .fullp .fg span { font-size: 12px; padding: 3px 10px; border-radius: var(--r-pill); background: rgba(255,255,255,.1); color: rgba(255,255,255,.75); }
+  .fullp .fg span, .fullp .fg .gl { font-size: 12px; padding: 3px 10px; border-radius: var(--r-pill); background: rgba(255,255,255,.1); color: rgba(255,255,255,.75); }
   .fullp .fbar { position: relative; height: 28px; margin-top: 16px; cursor: pointer; touch-action: none; }
   .fullp .fbar::before, .fullp .fbar .ffill { content: ""; position: absolute; left: 0; top: 12px; height: 5px; border-radius: 3px; }
   .fullp .fbar::before { right: 0; background: rgba(255,255,255,.2); }
@@ -486,7 +488,7 @@
 <script src="config.js"></script>
 <script>
 // ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
-const BUILD = '20261118-1511';
+const BUILD = '20261118-1546';
 (async () => {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
@@ -660,6 +662,19 @@ function infoFor(albumId) {
   if (!useLastfm) return { main: '', subs: [], own: false };
   const lf = (genreCache[albumId]?.g || []).map(cap);
   return { main: lf[0] || '', subs: lf.slice(1), own: false };
+}
+// Genreetiketter: egna genrer blir knappar till genresidan (i det som är valt nu), Last.fm-förslag är bara text.
+function genreChips(box, albumId, leave, mainCls) {
+  const i = infoFor(albumId);
+  const go = r => { leave(); setTimeout(() => navigate(r), 350); };
+  const chip = (label, r, cls) => {
+    if (!i.own) { box.appendChild(el('span', cls, label)); return; }
+    const b = el('button', 'gl' + (cls ? ' ' + cls : ''), label); b.title = 'Visa ' + label;
+    b.onclick = e => { e.stopPropagation(); go(r); }; box.appendChild(b);
+  };
+  if (i.main) chip(i.main, { view: 'genre', genre: i.main }, mainCls);
+  i.subs.forEach(x => i.main ? chip(x, { view: 'genre', genre: i.main, sub: x }) : box.appendChild(el('span', null, x)));
+  return i;
 }
 const genresFor = albumId => { const i = infoFor(albumId); return [i.main, ...i.subs].filter(Boolean); };
 function allOwnIds() { return [...new Set([...Object.keys(repoGenres), ...Object.keys(localGenres)])]; }
@@ -1741,9 +1756,7 @@ function openAlbum(a) {
   inner.appendChild(hero);
   const paintGenres = () => {
     gBox.innerHTML = '';
-    const i = infoFor(a.id);
-    if (i.main) gBox.appendChild(el('span', 'main', i.main));
-    i.subs.forEach(x => gBox.appendChild(el('span', null, x)));
+    const i = genreChips(gBox, a.id, closeSheet, 'main');
     if (!i.own && (i.main || i.subs.length)) gBox.appendChild(el('span', 'src', 'från Last.fm'));
   };
   const editor = genreEditor([a.id], paintGenres); editor.hidden = true; inner.appendChild(editor);
@@ -1923,7 +1936,7 @@ function paintFull() {
   $('fTitle').textContent = t.name;
   $('fArtist').textContent = artistNames(t.artists);
   $('fAlbumName').textContent = t.album.name + (t.album.release_date ? ' · ' + year(t.album.release_date) : '');
-  const g = $('fGenres'); g.innerHTML = ''; genresFor(t.album.id).forEach(x => g.appendChild(el('span', null, x)));
+  const g = $('fGenres'); g.innerHTML = ''; genreChips(g, t.album.id, closeFull);
   $('fIcon').innerHTML = ps.is_playing ? ICON_PAUSE : ICON_PLAY;
   $('fullp').classList.toggle('paused', !ps.is_playing);
   $('fShuffle').classList.toggle('on', !!ps.shuffle_state);
