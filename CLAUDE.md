@@ -55,6 +55,18 @@ Genrer: Robin trycker ⚙︎ → Kopiera och klistrar in JSON i chatten → kör
 - Genreetiketter i albumvyn och stora spelaren är knappar (egna genrer, med ›) till genre-/subgenresidan i det som är valt nu. Last.fm-förslag är bara text. (Robin utvärderar, nov 2026.)
 - Lagring: spellistornas innehåll (även lägeslistorna) i IndexedDB (`hyllan` → `pl`, en post per lista med snapshot). Gamla `pl_cache_v1` flyttas dit automatiskt. Övrigt i localStorage ( `own_genres_v1`, `artist_prefs_v1`, `artist_img_v1`, `last_played`, `my_device`, `side_closed`).
 
+## Genreprinciper (Robins val, nov 2026)
+- Huvudgenre = vad man väljer efter när man vill lyssna (läge/sammanhang). Subgenre = stil inom det.
+- Subgenre förtjänar sin plats först vid ~10 album/låtar. Hellre grovt nu, dela upp senare. Claude kan byta namn på/slå ihop subgenrer i `genres.json` på en gång.
+- **Dance** = klubbmusik (egen huvudgenre). **Club** är Robins medvetna paraply-subgenre för House + Trance (så båda kan spelas ihop utan Dance Pop/Club Pop/Dubstep). Ska sättas konsekvent ihop med House/Trance.
+- **Electronic** = icke-klubb (electro, downtempo, experimentellt). Tumregel: sångbaserad pop med syntar = Pop / Electropop; produktion i fokus = Electronic.
+- Gränsfall Pop/Dance: radiolåt med refräng = Pop / Dance Pop; dansgolv/klubbremix = Dance.
+- Kända inkonsekvenser som Robin rättar själv: House under Electronic på två album (`3bJg5G91…`, `6T3WdeRv…`), Electronic/Electropop på några, M.I.A. (`28GeLpi0…`) har Electronic/Dancehall – förslag Hip-Hop / Alternative Hip-Hop.
+
+## Öppna frågor
+- **Album som räknas som lösa låtar** (t.ex. Ellie Goulding *Halcyon* / *Halcyon Days*, 2013): sannolikt utgåvor – låtarna kommer från en annan utgåva (deluxe/återutgåva) än den Robin ser som "albumet", så `total_tracks` nås aldrig. Ej felsökt (Robin körde aldrig konsolraden pga 429-incidenten). Möjliga lösningar: lösare regel, eller "Visa som album" i ⋯-menyn. Fråga Robin innan.
+- "Släng lokala ändringar" finns under ⚙︎ (två tryck) – tömmer genrer/artistval på enheten så att `genres.json` gäller.
+
 ## Beslut som är tagna
 - Mobil = flikar (förslag B), dator = sidomeny (D1). Gamla iTunes-kolumnbläddraren valdes bort.
 - Ingen artistrad i genrevyn (Robin ville inte ha den). "Alla låtar" heter "Låtar".
