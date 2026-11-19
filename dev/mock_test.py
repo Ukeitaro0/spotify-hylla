@@ -30,7 +30,9 @@ for i, (typ, tot, c) in enumerate([("album", 6, "a5c"), ("single", 2, "5ac")], s
         EXTRA.append({"added_at": "2025-03-01T00:00:00Z", "item": {"id": f"t{i}_{n}", "uri": f"spotify:track:t{i}_{n}", "name": f"Låt {n+1}",
             "type": "track", "duration_ms": 200000, "track_number": n + 1, "disc_number": 1, "album": a, "artists": a["artists"]}})
 PL_ITEMS = {"pl": ITEMS, "pl25": EXTRA + [ITEMS[-1]], "gr": ITEMS[:3]}
-PLAYLISTS = [{"id": "pl", "name": "2026", "snapshot_id": "s1"}, {"id": "pl25", "name": "2025", "snapshot_id": "s1"}, {"id": "gr", "name": "Gubbrock", "snapshot_id": "s1"}]
+PLAYLISTS = [{"id": "pl", "name": "2026", "snapshot_id": "s1"}, {"id": "pl25", "name": "2025", "snapshot_id": "s1"}, {"id": "gr", "name": "Gubbrock", "snapshot_id": "s1"},
+             {"id": "mnow", "name": "populärt nu", "snapshot_id": "s1"}, {"id": "mall", "name": "alltid populärt", "snapshot_id": "s1"}, {"id": "march", "name": "arkivet", "snapshot_id": "s1"}]
+PL_ITEMS.update({"mnow": [ITEMS[0]], "mall": [ITEMS[5]], "march": []})
 CALLS = {"artists": 0, "all": 0}
 MODE = {"r429": False}
 DEVICES = [{"id": "pc", "name": "Dator", "type": "Computer", "is_active": True, "is_restricted": False}]
@@ -60,7 +62,7 @@ async def run(w, h, touch, prefix):
         await pg.route("https://ws.audioscrobbler.com/**", lambda r: r.fulfill(status=200, content_type="application/json",
                        headers={"Access-Control-Allow-Origin": "*"}, body='{"toptags":{"tag":[{"name":"pop","count":100}]}}'))
         await pg.goto(f"file://{OUT}/index.html")
-        await pg.evaluate("""localStorage.setItem('access_token','x');localStorage.setItem('expires_at',String(Date.now()+1e7));
+        await pg.evaluate("""localStorage.setItem('access_token','x');localStorage.setItem('scope','playlist-modify-private playlist-modify-public');localStorage.setItem('expires_at',String(Date.now()+1e7));
           localStorage.setItem('own_genres_v1',JSON.stringify({al0:{main:'Country',subs:['Americana'],t:1},al2:{main:'Pop',subs:['Electropop'],t:1}}))""")
         await pg.reload(); await pg.wait_for_timeout(1500)
         await pg.screenshot(path=f"{OUT}/{prefix}-start.png")
@@ -82,21 +84,20 @@ async def run(w, h, touch, prefix):
         await pg.screenshot(path=f"{OUT}/{prefix}-spellistor.png")
         # Omstart: ska visa biblioteket direkt från IndexedDB
         await pg.reload(); await pg.wait_for_timeout(300)
-        # Betyg: albumet 5, en låt 3, filter ★5
+        # Lägen: markera i stora spelaren, flytta, vy per läge
         await pg.evaluate("navigate({view:'albums'})"); await pg.wait_for_timeout(300)
-        await pg.evaluate("openAlbum(albums.find(a=>a.id==='al0'))"); await pg.wait_for_timeout(400)
-        await pg.locator('.ratebox .stars button').nth(4).click()
-        await pg.locator('#sheetInner .trk .stars button').nth(2).click()
-        await pg.screenshot(path=f"{OUT}/{prefix}-betyg-album.png")
-        await pg.evaluate("closeSheet()"); await pg.wait_for_timeout(400)
-        await pg.evaluate("openTrackMenu(tracks.find(x=>x.t.album.id==='al0').t)"); await pg.wait_for_timeout(300)
-        await pg.screenshot(path=f"{OUT}/{prefix}-betyg-meny.png")
-        await pg.evaluate("closeSheet()"); await pg.wait_for_timeout(400)
-        await pg.evaluate("minRate=5; navigate({view:'tracks'})"); await pg.wait_for_timeout(300)
-        await pg.screenshot(path=f"{OUT}/{prefix}-betyg-filter.png")
-        print(prefix, "betyg:", await pg.evaluate("[albums.filter(okAlbum).length, tracks.filter(x=>okTrack(x.t)).length, Object.keys(exportGenres()).filter(k=>k.startsWith('rate:'))]"))
-        await pg.evaluate("minRate=0; navigate({view:'albums'})"); await pg.wait_for_timeout(300)
-        await pg.screenshot(path=f"{OUT}/{prefix}-betyg-rutnat.png")
+        print(prefix, "lägen redo:", await pg.evaluate("[modesReady(), modeItems.now.length, modeItems.all.length, modeOf(ITEMS0)]".replace("ITEMS0", "'spotify:track:t0_0'")))
+        await pg.evaluate("openFull()"); await pg.wait_for_timeout(400)
+        await pg.locator('#fModes button').nth(0).click(); await pg.wait_for_timeout(600)
+        await pg.screenshot(path=f"{OUT}/{prefix}-lage-spelare.png")
+        await pg.locator('#fModes button').nth(1).click(); await pg.wait_for_timeout(600)
+        print(prefix, "efter flytt:", await pg.evaluate("[modeOf(ps.item.uri), modeItems.now.length, modeItems.all.length]"))
+        await pg.screenshot(path=f"{OUT}/{prefix}-lage-spelare2.png")
+        await pg.evaluate("closeFull()"); await pg.wait_for_timeout(400)
+        await pg.evaluate("navigate({view:'mode', mode:'all'})"); await pg.wait_for_timeout(300)
+        await pg.screenshot(path=f"{OUT}/{prefix}-lage-vy.png")
+        await pg.evaluate("navigate({view: isDesk() ? 'albums' : 'home'})"); await pg.wait_for_timeout(300)
+        await pg.screenshot(path=f"{OUT}/{prefix}-lage-bibliotek.png")
         # Genreetiketter går till genresidan (albumvy och stora spelaren)
         await pg.evaluate("setOwn('al0',{main:'Country',subs:['Americana']}); navigate({view:'albums'})"); await pg.wait_for_timeout(300)
         await pg.evaluate("openAlbum(albums.find(a=>a.id==='al0'))"); await pg.wait_for_timeout(400)

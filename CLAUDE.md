@@ -51,9 +51,9 @@ Genrer: Robin trycker ⚙︎ → Kopiera och klistrar in JSON i chatten → kör
 - Spelare: minispelare + stor spelare (blanda, upprepa, spola, byt enhet). Senast spelat sparas och kan återupptas.
 - Enhetsval: telefon spelar på telefonens Spotify, dator på datorns. iPhone listar inte Spotify när appen sover → Hyllan öppnar `spotify:` och spelar när man kommer tillbaka.
 - Bibliotek: valet "Årslistor 2012–2026" (`LIB = '__lib__'`) slår ihop alla listor som heter ett årtal ≥ 2012. Bara nya/ändrade listor (snapshot_id) läses, en sida i taget med paus, och det kan fortsätta nästa gång. Dubbletter mellan listor räknas en gång. "Ta bort ur spellistan" finns inte i biblioteket.
-- Betyg 1–5 (stjärnor): per album-id och per låt-uri, låt utan eget ärver albumets, eget låtbetyg gäller. Synkas i `genres.json` som `"rate:<albumId|trackUri>": {"r","t"}` (r 0 = ta bort), samma Kopiera-flöde. Sätts i albumvyn (albumet + klickbara stjärnor per låt) och i ⋯-menyn. Filter "Alla betyg / ★3+ / ★4+ / ★5" (minst, sparas inte) bredvid sorteringen, plus sortering "Betyg". localStorage `ratings_v1`.
+- **Lägen** (ersatte stjärnbetygen 2026-11-19): tre av Robins egna Spotify-listor, "populärt nu" (flamma), "alltid populärt" (krona), "arkivet" (låda). Gissas på namn, kan väljas under ⚙︎ → Lägen (`mode_lists_v1`, list-id). En låt har högst ett läge; byte = POST `/playlists/{id}/items` {uris} i nya + DELETE ur gamla, cachen uppdateras direkt. Tryck på aktivt läge = ta bort. Tre ikonknappar i stora spelaren (namnet bredvid det aktiva), "Läge" i ⋯-menyn (även på låtar i albumvyn), liten ikon på låtrader (inte arkivet), tre rader i Bibliotek/sidomenyn → vy `mode` med låtarna. Visningsnamn = listans namn i Spotify.
 - Genreetiketter i albumvyn och stora spelaren är knappar (egna genrer, med ›) till genre-/subgenresidan i det som är valt nu. Last.fm-förslag är bara text. (Robin utvärderar, nov 2026.)
-- Lagring: spellistornas innehåll i IndexedDB (`hyllan` → `pl`, en post per lista med snapshot). Gamla `pl_cache_v1` flyttas dit automatiskt. Övrigt i localStorage ( `own_genres_v1`, `artist_prefs_v1`, `artist_img_v1`, `last_played`, `my_device`, `side_closed`).
+- Lagring: spellistornas innehåll (även lägeslistorna) i IndexedDB (`hyllan` → `pl`, en post per lista med snapshot). Gamla `pl_cache_v1` flyttas dit automatiskt. Övrigt i localStorage ( `own_genres_v1`, `artist_prefs_v1`, `artist_img_v1`, `last_played`, `my_device`, `side_closed`).
 
 ## Beslut som är tagna
 - Mobil = flikar (förslag B), dator = sidomeny (D1). Gamla iTunes-kolumnbläddraren valdes bort.
@@ -63,7 +63,7 @@ Genrer: Robin trycker ⚙︎ → Kopiera och klistrar in JSON i chatten → kör
 - Riktig iOS-app/egen CarPlay: inte värt det nu (kräver Mac + Apple-konto ~1 100 kr/år, CarPlay-behörighet osäker).
 
 ## Idéer på listan (inte påbörjade)
-- **NÄSTA (beslutat 2026-11-18): Lägen i stället för betyg.** Stjärnbetygen ska BORT (Robin har godkänt). Tre lägen per LÅT (inte album), högst ett åt gången: **Nu** (favorit just nu), **All time**, **Arkivet** (var favorit, vilar). Lagras i tre Spotify-spellistor som Robin skapar själv; Hyllan flyttar låten mellan dem (lägg till i ny, ta bort ur gammal). Ingen Kopiera-export behövs. Knapp i stora spelaren, liten markering på låtrader (Nu/All time, inte Arkivet), tre rader överst i Bibliotek. Förslag (aldrig automatiskt): låt i Nu > X månader → föreslå Arkivet. Behöver listornas namn från Robin.
+- Lägen: ev. förslag när en låt legat i "populärt nu" > X månader → föreslå arkivet (aldrig automatiskt). Inte byggt.
 - Total speltid per album (t.ex. under spåren / i rubriken).
 - År: `release_date` finns (sortering "Utgivning" finns redan). Ev. filter per årtionde. Obs: remaster-utgåvor har ofta remasterns år.
 - Sök i hela Spotify (`GET /search`, kolla gränser i Development Mode), t.ex. för att lägga till nytt i en lista.
