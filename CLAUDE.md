@@ -45,7 +45,7 @@ Genrer: Robin trycker ⚙︎ → Kopiera och klistrar in JSON i chatten → kör
 ## Hur appen är byggd (översikt)
 - Navigering: `route` = {view, genre, sub, artist, tab}. Vyer: home, albums, artists, tracks, loose, genres, genre, artist, playlists, search. `navigate()` + history (bakåtgest fungerar).
 - Mobil (<900 px): flikar längst ner (Bibliotek, Genrer, Spellistor, Sök). Dator (≥900 px): fast sidomeny (Bibliotek, Genrer med subgenrer, Spellistor med sök, fällbara, Inställningar fast längst ner).
-- Album = `album_type` album/compilation och alla spår finns i listan. Övrigt = "Övriga låtar" (lösa låtar). Dubbletter (singel som också finns på album) märks.
+- Album = `album_type` album/compilation och alla spår finns i listan (eller ≥80 % och ≥5 låtar). Övrigt = "Övriga låtar" (lösa låtar). Dubbletter (singel som också finns på album) märks.
 - Genrer per album-id (huvudgenre + subgenrer). Lösa låtar får genre via sitt album-id. Last.fm visas bara på album utan egen genre (kan stängas av).
 - Artister: rutnät med runda bilder (riktiga bilder hämtas en i taget, 0,7 s paus, cache 60 dagar), artistsida med Album / Låtar utanför album / Medverkar på. "Visa under artist" i ⋯-menyn flyttar en låt till en gästartist.
 - Spelare: minispelare + stor spelare (blanda, upprepa, spola, byt enhet). Senast spelat sparas och kan återupptas.
@@ -64,7 +64,7 @@ Genrer: Robin trycker ⚙︎ → Kopiera och klistrar in JSON i chatten → kör
 - Kända inkonsekvenser som Robin rättar själv: House under Electronic på två album (`3bJg5G91…`, `6T3WdeRv…`), Electronic/Electropop på några, M.I.A. (`28GeLpi0…`) har Electronic/Dancehall – förslag Hip-Hop / Alternative Hip-Hop.
 
 ## Öppna frågor
-- **Album som räknas som lösa låtar** (t.ex. Ellie Goulding *Halcyon* / *Halcyon Days*, 2013): sannolikt utgåvor – låtarna kommer från en annan utgåva (deluxe/återutgåva) än den Robin ser som "albumet", så `total_tracks` nås aldrig. Ej felsökt (Robin körde aldrig konsolraden pga 429-incidenten). Möjliga lösningar: lösare regel, eller "Visa som album" i ⋯-menyn. Fråga Robin innan.
+- **Album som räknas som lösa låtar** – felsökt 2026-11-23 med `dev/diagnos_losa_album.js` (läser bara cachen; kör `copy(__rows)` efteråt). Orsak: 1–3 spår saknades (borttagna av Robin eller ur Spotifys katalog), inte olika spellistor. Åtgärd: album räknas om ≥80 % av spåren och ≥5 låtar finns. Kvar som lösa: Death Cab *Plans* (8/13, två utgåvor blandade), Phosphorescent *Muchacho De Lujo (Deluxe)* (10/22, bonusspår). Ev. "Visa som album" i ⋯-menyn senare om Robin vill.
 - "Släng lokala ändringar" finns under ⚙︎ (två tryck) – tömmer genrer/artistval på enheten så att `genres.json` gäller.
 
 ## Beslut som är tagna

@@ -487,7 +487,7 @@
 <script src="config.js"></script>
 <script>
 // ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
-const BUILD = '20261119-0903';
+const BUILD = '20261123-1202';
 (async () => {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
@@ -785,7 +785,8 @@ function build(items) {
   for (const g of byAlbum.values()) {
     const a = g.album, n = g.items.length;
     const isRealAlbum = ALBUM_TYPES.includes((a.album_type || '').toLowerCase());
-    const complete = a.total_tracks ? n >= a.total_tracks : n >= 4;
+    // Album = alla spår, eller minst 80 % och minst 5 låtar (ett par borttagna/försvunna spår ska inte göra albumet till lösa låtar)
+    const complete = a.total_tracks ? (n >= a.total_tracks || (n >= 5 && n / a.total_tracks >= 0.8)) : n >= 4;
     g.items.sort((x, y) => (x.t.disc_number - y.t.disc_number) || (x.t.track_number - y.t.track_number));
     if (isRealAlbum && complete) {
       albums.push({ id: a.id, uri: a.uri, name: a.name, artists: a.artists, artist: artistNames(a.artists), date: a.release_date,

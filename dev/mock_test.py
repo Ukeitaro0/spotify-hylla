@@ -24,9 +24,10 @@ for i, (typ, tot, c) in enumerate([("album", 12, "c96"), ("single", 3, "69c"), (
             "type": "track", "duration_ms": 200000, "track_number": n + 1, "disc_number": 1, "album": a, "artists": a["artists"]}})
 # Fler listor för biblioteksläget: 2025 delar en låt med 2026 (ska räknas en gång), "Gubbrock" ska inte ingå.
 EXTRA = []
-for i, (typ, tot, c) in enumerate([("album", 6, "a5c"), ("single", 2, "5ac")], start=10):
+# al12: 10 av 12 spår (≥80 %, ska bli album). al13: 4 av 5 (färre än 5 låtar, ska vara lösa låtar).
+for i, (typ, tot, c, have) in enumerate([("album", 6, "a5c", 6), ("single", 2, "5ac", 2), ("album", 12, "ca5", 10), ("album", 5, "5ca", 4)], start=10):
     a = alb(i, typ, tot, c)
-    for n in range(tot):
+    for n in range(have):
         EXTRA.append({"added_at": "2025-03-01T00:00:00Z", "item": {"id": f"t{i}_{n}", "uri": f"spotify:track:t{i}_{n}", "name": f"Låt {n+1}",
             "type": "track", "duration_ms": 200000, "track_number": n + 1, "disc_number": 1, "album": a, "artists": a["artists"]}})
 PL_ITEMS = {"pl": ITEMS, "pl25": EXTRA + [ITEMS[-1]], "gr": ITEMS[:3]}
@@ -79,6 +80,7 @@ async def run(w, h, touch, prefix):
         # Biblioteket: årslistorna som en
         await pg.evaluate("pickPlaylist('__lib__')"); await pg.wait_for_timeout(2500)
         print(prefix, "bibliotek:", await pg.evaluate("[plName(), tracks.length, albums.length, loose.length, curId]"))
+        print(prefix, "80 %-regeln (al12 album, al13 lös):", await pg.evaluate("[albums.some(a=>a.id==='al12'), loose.some(x=>x.t.album.id==='al13')]"))
         await pg.screenshot(path=f"{OUT}/{prefix}-bibliotek.png")
         await pg.evaluate("navigate({view:'playlists'})"); await pg.wait_for_timeout(300)
         await pg.screenshot(path=f"{OUT}/{prefix}-spellistor.png")
