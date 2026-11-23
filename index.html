@@ -487,7 +487,7 @@
 <script src="config.js"></script>
 <script>
 // ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
-const BUILD = '20261123-1326';
+const BUILD = '20261123-1331';
 (async () => {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
@@ -1564,7 +1564,7 @@ function listTracks(main, isLoose, src) {
     byArtist(a, b));
   const uris = list.map(x => x.t.uri);
   const playBtn = el('button', 'primary', '▶  Spela alla');
-  playBtn.onclick = () => play({ uris: uris.slice(0, 500) });
+  playBtn.onclick = () => play({ uris: shuffled(uris).slice(0, 500) });   // Spela alla = blandat (Robins val)
   main.appendChild(toolbar(list.length + ' låtar', uris, list.length && !selecting ? playBtn : null));
   const nDup = loose.filter(x => isDup(x.t)).length;
   if (isLoose && (nDup || dupOnly)) {
@@ -1968,7 +1968,9 @@ function lastPlayed() {
 async function resumeLast() {
   const t = ps.item, pos = Math.max(0, Math.round(curPos()));
   const ctx = ps.context?.uri;
-  const body = ctx && !ctx.includes(':artist:') ? { context_uri: ctx, offset: { uri: t.uri }, position_ms: pos } : { uris: [t.uri], position_ms: pos };
+  let q = []; try { q = JSON.parse(store.get('last_uris') || '[]'); } catch {}
+  const body = ctx && !ctx.includes(':artist:') ? { context_uri: ctx, offset: { uri: t.uri }, position_ms: pos }
+    : q.includes(t.uri) ? { uris: q, offset: { uri: t.uri }, position_ms: pos } : { uris: [t.uri], position_ms: pos };
   $('pIcon').innerHTML = ICON_PAUSE;
   await play(body, t.uri);
 }
@@ -2027,7 +2029,8 @@ $('pPlay').onclick = async () => {
   const wasPlaying = ps.is_playing;
   ps.progress_ms = curPos(); psAt = Date.now(); ps.is_playing = !wasPlaying;
   $('pIcon').innerHTML = ps.is_playing ? ICON_PAUSE : ICON_PLAY; paintFull();
-  try { await api('/me/player/' + (wasPlaying ? 'pause' : 'play'), { method: 'PUT' }); } catch (e) { toast('Fel: ' + e.message, 3000); }
+  try { await api('/me/player/' + (wasPlaying ? 'pause' : 'play'), { method: 'PUT' }); }
+  catch (e) { if (!wasPlaying && e.status === 404) return resumeLast(); toast('Fel: ' + e.message, 3000); }
   pollSoon();
 };
 $('pNext').onclick = async () => { if (ps?.stale) return resumeLast(); try { await api('/me/player/next', { method: 'POST' }); } catch (e) { toast('Fel: ' + e.message, 3000); } pollSoon(); };
@@ -2110,14 +2113,28 @@ function pickMyDevice(devices) {
   return ok.find(d => d.id === saved) || ok.find(d => MY_TYPES.includes(d.type) && d.is_active) || ok.find(d => MY_TYPES.includes(d.type)) || null;
 }
 async function getDevices() { try { return (await api('/me/player/devices'))?.devices || []; } catch { return []; } }
+const shuffled = a => { const r = a.slice(); for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; };
+// Spotify sparar ingen spellista när Hyllan skickar en lista med låtar, så Hyllan kommer ihåg listan själv.
+function rememberQueue(body) {
+  if (body.uris && body.uris.length > 1) store.set('last_uris', JSON.stringify(body.uris));
+  else if (body.context_uri) store.del('last_uris');
+}
+// Spotify ignorerar ibland position_ms när appen nyss vaknat → kolla en gång och spola dit.
+async function ensurePos(body) {
+  const pos = body.position_ms || 0; if (pos < 5000) return;
+  await new Promise(r => setTimeout(r, 2000));
+  try { const s = await api('/me/player'); const want = body.offset?.uri || body.uris?.[0];
+    if (s && s.item && s.item.uri === want && (s.progress_ms || 0) < pos - 5000) await api('/me/player/seek?position_ms=' + pos, { method: 'PUT' }); } catch {}
+}
 async function play(body, fallbackUri) {
+  rememberQueue(body);
   const devices = await getDevices();
   const mine = pickMyDevice(devices);
   if (mine) {
     try {
       await api('/me/player/play?device_id=' + encodeURIComponent(mine.id), { method: 'PUT', body: JSON.stringify(body) });
       store.set('my_device', mine.id);
-      toast(mine.is_active ? 'Spelar ▶' : 'Spelar på ' + mine.name + ' ▶'); pollSoon(); return;
+      toast(mine.is_active ? 'Spelar ▶' : 'Spelar på ' + mine.name + ' ▶'); pollSoon(); ensurePos(body); return;
     } catch (e) { if (e.status !== 404) { toast((e.status === 403 ? 'Spotify nekade: ' : 'Fel: ') + e.message, 4000); return; } }
   }
   if (!onTouch) {                 // datorn: ingen Spotify på datorn igång, spela där det redan spelar
@@ -2146,6 +2163,7 @@ async function handlePending() {
     if (p.body) await api('/me/player/play?device_id=' + encodeURIComponent(mine.id), { method: 'PUT', body: JSON.stringify(p.body) });
     else await api('/me/player', { method: 'PUT', body: JSON.stringify({ device_ids: [mine.id], play: true }) });
     store.set('my_device', mine.id); toast('Spelar på ' + mine.name + ' ▶'); pollSoon();
+    if (p.body) ensurePos(p.body);
   } catch (e) { toast('Fel: ' + e.message, 4000); }
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) handlePending(); });

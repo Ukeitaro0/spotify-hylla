@@ -36,7 +36,8 @@ PLAYLISTS = [{"id": "pl", "name": "2026", "snapshot_id": "s1"}, {"id": "pl25", "
 PL_ITEMS.update({"mnow": [ITEMS[0]], "mall": [ITEMS[5]], "march": []})
 CALLS = {"artists": 0, "all": 0}
 MODE = {"r429": False}
-DEVICES = [{"id": "pc", "name": "Dator", "type": "Computer", "is_active": True, "is_restricted": False}]
+PLAYS = []   # kroppar som skickats till /me/player/play
+DEVICES = [{"id": "pc", "name": "Dator", "type": "Computer", "is_active": True, "is_restricted": False}, {"id": "ph", "name": "iPhone", "type": "Smartphone", "is_active": False, "is_restricted": False}]
 
 async def run(w, h, touch, prefix):
     async with async_playwright() as p:
@@ -50,6 +51,7 @@ async def run(w, h, touch, prefix):
             if MODE["r429"]:                       # Spotify spärrar, utan läsbar Retry-After (som i verkligheten via CORS)
                 if "/v1/artists/" in u: CALLS["artists"] += 1
                 return await r.fulfill(status=429, body="")
+            if "/me/player/play" in u and r.request.method == "PUT": PLAYS.append(json.loads(r.request.post_data or "{}"))
             if "/me/playlists" in u: body = {"items": [{**p, "owner": {"id": "me"}, "items": {"total": len(PL_ITEMS[p["id"]])}} for p in PLAYLISTS], "next": None}
             elif "/items" in u and "/playlists/" in u:
                 its = PL_ITEMS[u.split("/playlists/")[1].split("/")[0]]; body = {"items": its, "next": None, "total": len(its)}
@@ -115,6 +117,16 @@ async def run(w, h, touch, prefix):
         await pg.locator('#fGenres .gl', has_text='Country').click(); await pg.wait_for_timeout(900)
         print(prefix, "genrelänk spelare:", await pg.evaluate("[route.view, route.genre, route.sub || null, fullOpen]"))
         await pg.screenshot(path=f"{OUT}/{prefix}-genrelank-efter.png")
+        # Spela alla = blandat, och återupptagning fortsätter i samma låtlista (Spotify sparar ingen spellista för en lista med låtar)
+        await pg.evaluate("closeFull(); navigate({view:'tracks'})"); await pg.wait_for_timeout(400)
+        PLAYS.clear(); await pg.get_by_text("Spela alla").first.click(); await pg.wait_for_timeout(500)
+        order = [x["uris"] for x in PLAYS if "uris" in x]
+        print(prefix, "spela alla blandat:", bool(order) and order[0] != await pg.evaluate("tracks.map(x=>x.t.uri)"), len(order[0]) if order else 0)
+        q = order[0] if order else []
+        await pg.evaluate("([u]) => { localStorage.setItem('last_played', JSON.stringify({item: tracks.find(x=>x.t.uri===u).t, context: null, progress_ms: 90000})); ps = null; updatePlayer(null); }", [q[3]])
+        PLAYS.clear(); await pg.evaluate("resumeLast()"); await pg.wait_for_timeout(500)
+        pb = PLAYS[-1] if PLAYS else {}
+        print(prefix, "återuppta i listan:", len(pb.get("uris", [])), pb.get("offset"), pb.get("position_ms"))
         # 429-skydd: när Spotify spärrar ska appen sluta fråga helt, inte loopa
         await pg.evaluate("localStorage.removeItem('artist_img_v1'); localStorage.removeItem('blocked_until'); localStorage.removeItem('block_len')")
         MODE["r429"] = True; CALLS["all"] = 0
