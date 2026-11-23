@@ -48,6 +48,6 @@
   console.log(`${rows.length} ofullständiga album. Annan utgåva: ${c('annan utgåva')}. Bara i icke-årslistor: ${c('icke-årslistor')}. Saknar spår: ${c('saknar')}.`);
   const nära = rows.filter(r => { const [h, t] = r['har/totalt'].split('/').map(Number); return t && t - h <= 2 && h >= 6; }).length;
   console.log(`Saknar högst 2 spår (≥6 låtar): ${nära}`);
-  copy(JSON.stringify(rows));
-  console.log('Tabellen är kopierad – klistra in den i chatten.');
+  window.__rows = JSON.stringify(rows);
+  console.log('Skriv nu:  copy(__rows)  och tryck Enter – klistra sedan in i chatten.');
 })();
