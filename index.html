@@ -411,6 +411,72 @@
     background: rgba(50,52,62,.95); padding: 11px 18px; border-radius: var(--r-pill); font-size: 14px; z-index: 20;
     opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; max-width: 90vw; text-align: center; box-shadow: var(--shadow); }
   .toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+  /* ===== HIG-förslag v2 ===== */
+  /* Minispelare: en rad, tunn förloppslinje i nederkant */
+  .player { border-radius: 18px; }
+  .player .in { padding: 10px 14px 13px 10px; gap: 12px; }
+  .player img { width: 46px; height: 46px; border-radius: 11px; }
+  #pPrev, .player .times { display: none; }
+  .player .bar { position: absolute; left: 18px; right: 18px; bottom: 5px; height: 3px; margin: 0; }
+  .player .bar::before, .player .bar .fill { top: 0; height: 3px; border-radius: 2px; }
+  body.has-player main { padding-bottom: calc(160px + env(safe-area-inset-bottom)); }
+  body.has-player .selbar { bottom: calc(136px + env(safe-area-inset-bottom)); }
+  @media (max-width: 899px) { body.has-player .panel .scroll { padding-bottom: calc(150px + env(safe-area-inset-bottom)); } }
+  /* Pilar i listor: gråa, accent bara på ikonen till vänster */
+  .librow .ico:last-child { color: #5d5f6b; width: 18px; height: 18px; }
+  /* Toast: uppe under statusraden, skymmer inget man trycker på */
+  .toast, body.has-player .toast { top: calc(10px + env(safe-area-inset-top)); bottom: auto !important; transform: translate(-50%, -10px); }
+  .toast.on { transform: translate(-50%, 0); }
+  /* ⋯ på låtrader: 44×44 träffyta */
+  .trk .more { width: 44px; height: 44px; margin: -6px -8px -6px -4px; }
+  /* Stor rubrik som krymper vid scroll (mobil) */
+  .minihead { position: fixed; left: 0; right: 0; top: 0; z-index: 8; padding: env(safe-area-inset-top) 60px 0; height: calc(46px + env(safe-area-inset-top));
+    display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    background: rgba(22,23,28,.86); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid var(--line);
+    opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .minihead.on { opacity: 1; }
+  @media (min-width: 900px) { .minihead { display: none; } }
+  /* Genrer: "Utan egen genre" som rad under rutorna */
+  .nonebox { margin-top: 14px; background: var(--panel); border-radius: 18px; padding: 0 14px; }
+  .nonebox .librow { border-bottom: none; height: 62px; }
+  .nonebox .librow .ico:first-child { color: var(--muted); }
+  .nonebox .lbl small { display: block; font-size: 12px; color: var(--muted); margin-top: 1px; }
+  /* Albumvyn som egen sida på mobil (flikar och spelare syns) */
+  .pnav { display: none; }
+  .pnav .round { width: 40px; height: 40px; border-radius: 50%; border: none; padding: 0; display: grid; place-items: center;
+    background: rgba(255,255,255,.1); color: var(--text); font-size: 17px; }
+  .pnav .round.on { background: var(--accent-soft); color: var(--accent); }
+  @media (min-width: 900px) { .sheet.page .pnav { display: flex; position: absolute; top: 12px; right: 60px; z-index: 3; } .sheet.page .pnav .back { display: none; } }
+  @media (max-width: 899px) {
+    .sheet.page { background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; }
+    .sheet.page .panel { top: 0; border-radius: 0; box-shadow: none; background: var(--bg); transform: translateX(30px); }
+    .sheet.page.on .panel { transform: none; }
+    .sheet.page .grab, .sheet.page .close { display: none; }
+    .sheet.page .scroll { padding-top: calc(52px + env(safe-area-inset-top)); }
+    .sheet.page .pnav { display: flex; position: absolute; left: 0; right: 0; top: 0; z-index: 3; align-items: center; justify-content: space-between;
+      padding: calc(6px + env(safe-area-inset-top)) 18px 4px 10px; height: calc(52px + env(safe-area-inset-top)); transition: background .2s; }
+    .sheet.page .pnav.solid { background: rgba(22,23,28,.86); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid var(--line); }
+    .pnav .back { display: flex; margin: 0; font-size: 17px; padding: 8px 6px; }
+    body.sheetpage .tabbar { z-index: 11; }
+  }
+  /* Spela + Blanda */
+  .hero .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 340px; margin: 4px auto 0; }
+  .hero .two button { display: flex; align-items: center; justify-content: center; gap: 8px; height: 48px; font-size: 16px; font-weight: 700; }
+  .hero .two button svg { width: 20px; height: 20px; fill: currentColor; }
+  .hero .two .sec { background: rgba(255,255,255,.09); color: var(--accent); border: none; }
+  /* Stora spelaren: greppstreck, album/år + genre på en rad, lägen samlade i en mjuk kapsel */
+  .fullp .top .lbl { font-size: 0; }
+  .fullp .top .lbl::before { content: ""; display: block; width: 40px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.35); margin: 0 auto; }
+  .fullp .top button { background: transparent; }
+  .fullp .frow { display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; margin-top: 4px; }
+  .fullp .frow .fa { margin-top: 0; flex: 0 1 auto; min-width: 0; }
+  .fullp .frow .fg { margin-top: 0; }
+  .fullp .fs { font-size: 17px; }
+  .modes { display: inline-flex; gap: 2px; padding: 3px; margin-top: 12px; border-radius: 999px; background: rgba(255,255,255,.07); }
+  .modes button { width: 40px; height: 40px; }
+  @media (max-width: 799px) { .fullp { padding-left: 16px; padding-right: 16px; } .fullp .art img { width: min(100%, 60vh); } }
+  .modes button.cur { width: auto; padding: 0 14px 0 10px; gap: 7px; border-radius: 999px; font-size: 14px; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -429,6 +495,7 @@
   </div>
   <div class="sidefoot"><button class="srow" id="sideSettings"></button></div>
 </aside>
+<div class="minihead" id="minihead"></div>
 <main id="main"><div class="center">Laddar…</div></main>
 <nav class="tabbar" id="tabbar">
   <button data-tab="lib"></button><button data-tab="genres"></button><button data-tab="playlists"></button><button data-tab="search"></button>
@@ -438,6 +505,7 @@
     <div class="bgart" id="bgart"></div>
     <div class="grab" id="grab"></div>
     <button class="icon close" id="close" title="Stäng">✕</button>
+    <div class="pnav" id="pnav"><button class="back" id="pBack"></button><button class="round" id="pEdit" title="Ändra genrer">✎</button></div>
     <div class="scroll" id="sheetInner"></div>
   </div>
 </div>
@@ -466,9 +534,8 @@
   <div class="info">
     <div class="ft" id="fTitle"></div>
     <div class="fs" id="fArtist"></div>
-    <div class="fa" id="fAlbumName"></div>
+    <div class="frow"><div class="fa" id="fAlbumName"></div><div class="fg" id="fGenres"></div></div>
     <div id="fModes"></div>
-    <div class="fg" id="fGenres"></div>
     <div class="fbar" id="fBar"><div class="ffill" id="fFill"></div><div class="knob" id="fKnob"></div></div>
     <div class="ftimes"><span id="fPos">0:00</span><span id="fDur">0:00</span></div>
     <div class="fctl">
@@ -487,7 +554,7 @@
 <script src="config.js"></script>
 <script>
 // ===== Version: sidan kollar version.json och laddar om sig själv om en nyare finns =====
-const BUILD = '20261123-1331';
+const BUILD = '20261125-1208';
 (async () => {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
@@ -903,11 +970,11 @@ function modeButtons(getTrack) {
     MODES.forEach(m => {
       const b = el('button'); b.innerHTML = modeSvg(m, cur === m.k); b.disabled = modeBusy;
       b.setAttribute('aria-label', modeName(m)); b.title = modeName(m);
-      if (cur === m.k) b.style.background = m.color + '26';
+      if (cur === m.k) { b.style.background = m.color + '26'; b.classList.add('cur'); b.style.color = m.color; const s = el('span', null, modeName(m)); b.appendChild(s); }
       b.onclick = async e => { e.stopPropagation(); if (modeBusy) return; box.querySelectorAll('button').forEach(x => x.disabled = true); await setMode(t, m.k); paint(); };
       box.appendChild(b);
     });
-    if (cur) { const m = modeById(cur), l = el('span', 'ml', modeName(m)); l.style.color = m.color; box.appendChild(l); }
+
   };
   paint(); box.repaint = paint; return box;
 }
@@ -1376,9 +1443,9 @@ function viewGenres(main) {
   };
   list.forEach(([g, st]) => tile(g, genreColor(g), st.albums, st.tracks,
     [...st.subs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]).join(' · '), { view: 'genre', genre: g }));
-  if (noneA + noneT) tile('Utan egen genre', '#3a3c47', noneA, noneT, 'Sätt genre på dem', { view: 'genre', genre: NONE });
   if (!list.length && !(noneA + noneT)) main.appendChild(el('div', 'center', 'Inga genrer än.'));
   main.appendChild(box);
+  if (noneA + noneT) { const nb = el('div', 'nonebox'); nb.appendChild(btn('librow', `${icon('tag')}<span class="lbl">Utan egen genre<small>${countText(noneA, noneT)}</small></span><span class="c">Sätt genre</span>${icon('right', 'ico')}`, () => navigate({ view: 'genre', genre: NONE }))); main.appendChild(nb); }
 }
 
 function viewGenre(main) {
@@ -1796,9 +1863,12 @@ function openAlbum(a) {
   sLine.appendChild(aLink); sLine.appendChild(document.createTextNode((a.date ? ' · ' + year(a.date) : '') + ' · ' + a.items.length + ' låtar'));
   hero.appendChild(sLine);
   const gBox = el('div', 'g'); hero.appendChild(gBox);
-  const pb = el('button', 'primary', '▶  Spela'); pb.onclick = () => play({ context_uri: a.uri }, a.uri);
-  hero.appendChild(pb);
-  const eb = el('button', 'linkbtn', '✎ Ändra genrer'); hero.appendChild(el('br')); hero.appendChild(eb);
+  const two = el('div', 'two');
+  const pb = btn('primary', '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>Spela'); pb.onclick = () => play({ context_uri: a.uri }, a.uri);
+  const sb = btn('sec', '<svg viewBox="0 0 24 24"><path d="M17 3l4 4-4 4V8h-2.6l-2.2 3-1.2-1.6L13.4 6H17zm0 10l4 4-4 4v-3h-3.6l-7-9H3V6h4.4l7 9H17zM3 15h3.4l1.6-2.1 1.2 1.6L7.4 18H3z"/></svg>Blanda');
+  sb.onclick = () => play({ uris: shuffled(a.items.map(x => x.t.uri)) });
+  two.appendChild(pb); two.appendChild(sb); hero.appendChild(two);
+  const eb = $('pEdit');
   inner.appendChild(hero);
   const paintGenres = () => {
     gBox.innerHTML = '';
@@ -1806,7 +1876,10 @@ function openAlbum(a) {
     if (!i.own && (i.main || i.subs.length)) gBox.appendChild(el('span', 'src', 'från Last.fm'));
   };
   const editor = genreEditor([a.id], paintGenres); editor.hidden = true; inner.appendChild(editor);
-  eb.onclick = () => { editor.hidden = !editor.hidden; eb.textContent = editor.hidden ? '✎ Ändra genrer' : '✓ Klar'; };
+  eb.textContent = '✎'; eb.classList.remove('on');
+  eb.onclick = () => { editor.hidden = !editor.hidden; eb.textContent = editor.hidden ? '✎' : '✓'; eb.classList.toggle('on', !editor.hidden); if (!editor.hidden) editor.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+  $('pBack').innerHTML = icon('left', '') + '<span>' + ({ albums: 'Album', genre: route.genre === NONE ? 'Utan genre' : (route.sub || route.genre || 'Genre'), artist: 'Artist', home: 'Bibliotek', search: 'Sök', tracks: 'Låtar', mode: 'Tillbaka' }[route.view] || 'Tillbaka') + '</span>';
+  $('sheet').classList.add('page'); document.body.classList.add('sheetpage');
   paintGenres();
   const l = el('div', 'list');
   a.items.forEach(x => l.appendChild(trackRow(x.t, { num: x.t.track_number, showCover: false, menu: true,
@@ -1820,6 +1893,7 @@ function showSheet() {
 }
 
 function openSettings() {
+  $('sheet').classList.remove('page'); document.body.classList.remove('sheetpage');
   const inner = $('sheetInner'); inner.innerHTML = ''; inner.scrollTop = 0;
   $('bgart').style.backgroundImage = 'none';
   const box = el('div', 'settings');
@@ -1900,7 +1974,7 @@ function openSettings() {
 }
 function hideSheet() {
   $('sheet').classList.remove('on'); document.body.classList.remove('locked');
-  $('panel').style.transform = ''; sheetOpen = false;
+  $('panel').style.transform = ''; sheetOpen = false; document.body.classList.remove('sheetpage');
   render();
 }
 function closeSheet() { if (sheetOpen) history.back(); else hideSheet(); }
@@ -2250,6 +2324,15 @@ document.addEventListener('focusout', e => {
   } catch (e) {
     if (e.message !== 'Inte inloggad') { if (tracks.length) toast(e.message, 4000); else showLogin(e.message); }
   }
+})();
+</script>
+<script>
+(() => {
+  const mh = document.getElementById('minihead');
+  const upd = () => { const t = document.querySelector('main .vhead h2'); const on = window.scrollY > 44 && t; mh.textContent = t ? t.textContent : ''; mh.classList.toggle('on', !!on); };
+  window.addEventListener('scroll', upd, { passive: true });
+  const sc = document.getElementById('sheetInner'), pn = document.getElementById('pnav');
+  sc.addEventListener('scroll', () => pn.classList.toggle('solid', sc.scrollTop > 200), { passive: true });
 })();
 </script>
 </body>

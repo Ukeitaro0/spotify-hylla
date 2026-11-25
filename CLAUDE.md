@@ -69,6 +69,7 @@ Genrer: Robin trycker ⚙︎ → Kopiera och klistrar in JSON i chatten → kör
 - "Släng lokala ändringar" finns under ⚙︎ (två tryck) – tömmer genrer/artistval på enheten så att `genres.json` gäller.
 
 ## Beslut som är tagna
+- HIG-genomgång 2026-11-25 (jämförelse: https://claude.ai/artifact/UQiBjYRhatgtz4vruwDxtf). Robin vill behålla den mjuka, rundade, taktila stilen – inga kantigare typsnitt/ikoner, ingen Dynamic Type. Genomfört: minispelare på en rad (omslag, titel, paus, nästa, tunn förloppslinje), gråa pilar i listor, toast uppe under statusraden, albumvyn som egen sida på mobil (‹ tillbaka, flikar + spelare syns; dator = modal som förut), Spela (i ordning) + Blanda på album, ✎ uppe till höger på albumet = Ändra genrer (tillfällig snabbväg medan Robin sätter genrer, kan flyttas till ⋯ senare), ⋯ på låtrader 44×44, stora spelaren: greppstreck i stället för "Spelas nu", titel → artist → album · år · genre, lägen i en mjuk kapsel med namnet i aktiv knapp, omslag full bredd; "Utan egen genre" som rad under genrerutorna; liten rubrik i fast list när stora rubriken scrollat bort (mobil).
 - Mobil = flikar (förslag B), dator = sidomeny (D1). Gamla iTunes-kolumnbläddraren valdes bort.
 - Ingen artistrad i genrevyn (Robin ville inte ha den). "Alla låtar" heter "Låtar".
 - Genre syns inte på låtraderna.

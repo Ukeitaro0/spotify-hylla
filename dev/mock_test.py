@@ -86,6 +86,10 @@ async def run(w, h, touch, prefix):
         print(prefix, "bibliotek:", await pg.evaluate("[plName(), tracks.length, albums.length, loose.length, curId]"))
         print(prefix, "80 %-regeln (al12 album, al13 lös):", await pg.evaluate("[albums.some(a=>a.id==='al12'), loose.some(x=>x.t.album.id==='al13')]"))
         await pg.screenshot(path=f"{OUT}/{prefix}-bibliotek.png")
+        await pg.evaluate("navigate({view:'tracks'})"); await pg.wait_for_timeout(300)   # liten rubrik när den stora scrollat bort (mobil)
+        await pg.evaluate("window.scrollTo(0, 500)"); await pg.wait_for_timeout(400)
+        await pg.screenshot(path=f"{OUT}/{prefix}-rubrik-scroll.png")
+        await pg.evaluate("window.scrollTo(0, 0); navigate({view: isDesk() ? 'albums' : 'home'})"); await pg.wait_for_timeout(300)
         await pg.evaluate("navigate({view:'playlists'})"); await pg.wait_for_timeout(300)
         await pg.screenshot(path=f"{OUT}/{prefix}-spellistor.png")
         # Omstart: ska visa biblioteket direkt från IndexedDB
